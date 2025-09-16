@@ -12,10 +12,7 @@ const Landing: React.FC = () => {
           {/* Logo */}
           <div className="nav-logo">
             <div className="logo-icon">
-              <div className="h-8 w-8 bg-gradient-to-br from-blue-600 to-blue-400 rounded-full flex items-center justify-center relative">
-                <div className="absolute inset-1 rounded-full border border-white opacity-30"></div>
-                <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-              </div>
+              <img src="./StockScopeLogo.png" alt="Stock Scope Logo" className="w-8 h-8" />
             </div>
             <span className="logo-text">Stock Scope</span>
           </div>
@@ -71,13 +68,13 @@ const Landing: React.FC = () => {
                 <svg viewBox="0 0 400 200" className="chart-svg">
                   <defs>
                     <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.3"/>
-                      <stop offset="100%" stopColor="#3b82f6" stopOpacity="0"/>
+                      <stop offset="0%" stopColor="#22c55e" stopOpacity="0.4"/>
+                      <stop offset="100%" stopColor="#22c55e" stopOpacity="0"/>
                     </linearGradient>
                   </defs>
                   <path
                     d="M 10 150 L 50 140 L 90 160 L 130 120 L 170 110 L 210 130 L 250 100 L 290 90 L 330 80 L 370 70"
-                    stroke="#3b82f6"
+                    stroke="#22c55e"
                     strokeWidth="3"
                     fill="none"
                   />
@@ -333,7 +330,7 @@ const Landing: React.FC = () => {
           <div className="footer-content">
             <div className="footer-logo">
               <div className="logo-icon">
-                <div className="h-6 w-6 bg-gradient-to-br from-blue-600 to-blue-400 rounded-full flex items-center justify-center relative">
+                <div className="h-6 w-6 bg-gradient-to-br from-green-800 to-green-900 rounded-full flex items-center justify-center relative">
                   <div className="absolute inset-1 rounded-full border border-white opacity-30"></div>
                   <div className="w-1 h-1 bg-white rounded-full"></div>
                 </div>
