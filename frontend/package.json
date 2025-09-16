@@ -1,7 +1,7 @@
 {
-  "name": "tickertracker-frontend",
+  "name": "stock-scope-frontend",
   "version": "1.0.0",
-  "description": "Frontend for TickerTracker - AI-powered financial ticker analysis tool",
+  "description": "Frontend for Stock Scope - AI-powered financial market analysis tool",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -35,12 +35,13 @@
   },
   "keywords": [
     "stock-market",
-    "financial-tracker",
+    "financial-analysis",
+    "stock-scope",
     "react",
     "typescript",
     "trading",
     "analytics"
   ],
-  "author": "TickerTracker Team",
+  "author": "Stock Scope Team",
   "license": "MIT"
 }

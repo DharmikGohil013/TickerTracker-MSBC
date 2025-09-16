@@ -72,9 +72,9 @@ const Sidebar: React.FC = () => {
   ];
 
   return (
-    <div className="hidden md:flex md:w-64 md:flex-col">
-      <div className="flex flex-col flex-grow pt-5 bg-white border-r border-gray-200 overflow-y-auto">
-        <nav className="mt-5 px-3 pb-4">
+    <div className="hidden md:flex md:w-52 md:flex-col">
+      <div className="flex flex-col flex-grow pt-4 bg-white border-r border-gray-200 overflow-y-auto">
+        <nav className="mt-3 px-2 pb-4">
           <div className="space-y-1">
             {navigation.map((item) => {
               const isActive = location.pathname === item.href;
@@ -83,14 +83,14 @@ const Sidebar: React.FC = () => {
                   key={item.name}
                   to={item.href}
                   className={`
-                    group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors duration-200
+                    group flex items-center px-2 py-1.5 text-sm font-medium rounded-md transition-colors duration-200
                     ${isActive
                       ? 'bg-primary-100 text-primary-700 border-r-2 border-primary-500'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                     }
                   `}
                 >
-                  <span className={`mr-3 ${isActive ? 'text-primary-500' : 'text-gray-400 group-hover:text-gray-500'}`}>
+                  <span className={`mr-2 ${isActive ? 'text-primary-500' : 'text-gray-400 group-hover:text-gray-500'}`}>
                     {item.icon}
                   </span>
                   {item.name}

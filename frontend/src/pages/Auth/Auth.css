@@ -388,6 +388,9 @@
   position: relative;
   text-align: center;
   margin: 2rem 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .social-divider::before {
@@ -398,13 +401,18 @@
   right: 0;
   height: 1px;
   background: var(--gray-200);
+  z-index: 1;
 }
 
 .social-divider span {
   background: white;
-  padding: 0 1rem;
-  color: var(--gray-500);
+  padding: 0 1.5rem;
+  color: var(--gray-600);
   font-size: 0.875rem;
+  font-weight: 500;
+  position: relative;
+  z-index: 2;
+  white-space: nowrap;
 }
 
 .social-buttons {

@@ -137,14 +137,34 @@ export const Icons = {
   Logo: () => (
     <svg className="w-8 h-8" viewBox="0 0 32 32" fill="none">
       <defs>
-        <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#3B82F6" />
-          <stop offset="100%" stopColor="#8B5CF6" />
+        <linearGradient id="scopeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#1e40af" />
+          <stop offset="50%" stopColor="#3b82f6" />
+          <stop offset="100%" stopColor="#60a5fa" />
         </linearGradient>
       </defs>
-      <rect width="32" height="32" rx="8" fill="url(#logoGradient)" />
-      <path d="M8 24L16 12L24 16L20 24H8Z" fill="white" fillOpacity="0.9" />
-      <circle cx="20" cy="12" r="3" fill="white" />
+      
+      {/* Background circle */}
+      <circle cx="16" cy="16" r="15" fill="url(#scopeGradient)" stroke="#1e40af" strokeWidth="1"/>
+      
+      {/* Scope/Target rings */}
+      <circle cx="16" cy="16" r="11" fill="none" stroke="white" strokeWidth="1.5" opacity="0.6"/>
+      <circle cx="16" cy="16" r="7" fill="none" stroke="white" strokeWidth="1.5" opacity="0.8"/>
+      <circle cx="16" cy="16" r="3" fill="white"/>
+      
+      {/* Stock chart line */}
+      <path d="M6 22 L9 20 L12 24 L16 18 L20 20 L24 16 L28 14" 
+            stroke="white" 
+            strokeWidth="2" 
+            fill="none" 
+            strokeLinecap="round" 
+            strokeLinejoin="round"/>
+      
+      {/* Crosshairs */}
+      <line x1="16" y1="2" x2="16" y2="6" stroke="white" strokeWidth="1.5"/>
+      <line x1="16" y1="26" x2="16" y2="30" stroke="white" strokeWidth="1.5"/>
+      <line x1="2" y1="16" x2="6" y2="16" stroke="white" strokeWidth="1.5"/>
+      <line x1="26" y1="16" x2="30" y2="16" stroke="white" strokeWidth="1.5"/>
     </svg>
   )
 };
