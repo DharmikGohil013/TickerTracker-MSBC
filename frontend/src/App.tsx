@@ -9,6 +9,7 @@ import ProtectedRoute from './components/Auth/ProtectedRoute';
 
 // Import pages
 import Landing from './pages/Landing/Landing';
+import FreeTrial from './pages/FreeTrial/FreeTrial';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import ForgotPassword from './pages/Auth/ForgotPassword';
@@ -33,6 +34,7 @@ function App() {
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Landing />} />
+            <Route path="/free-trial" element={<FreeTrial />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />

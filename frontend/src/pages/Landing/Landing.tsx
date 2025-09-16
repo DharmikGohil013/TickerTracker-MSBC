@@ -47,7 +47,7 @@ const Landing: React.FC = () => {
               Get real-time insights, comprehensive analytics, and personalized recommendations.
             </p>
             <div className="hero-buttons">
-              <Link to="/register" className="hero-btn hero-btn-primary">
+              <Link to="/free-trial" className="hero-btn hero-btn-primary">
                 Start Free Trial
                 <Icons.TrendingUp />
               </Link>
@@ -301,7 +301,7 @@ const Landing: React.FC = () => {
               data-driven investment decisions. Start your free trial today.
             </p>
             <div className="cta-buttons">
-              <Link to="/register" className="cta-btn cta-btn-primary">
+              <Link to="/free-trial" className="cta-btn cta-btn-primary">
                 Start Free Trial
                 <Icons.TrendingUp />
               </Link>
