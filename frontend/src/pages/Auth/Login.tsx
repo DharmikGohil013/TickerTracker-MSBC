@@ -20,7 +20,7 @@ const Login: React.FC = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      const from = (location.state as any)?.from?.pathname || '/dashboard';
+      const from = (location.state as any)?.from?.pathname || '/app/dashboard';
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, navigate, location]);

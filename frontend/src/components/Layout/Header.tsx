@@ -22,7 +22,7 @@ const Header: React.FC = () => {
         <div className="flex justify-between items-center h-12">
           {/* Logo */}
           <div className="flex items-center">
-            <Link to="/dashboard" className="flex items-center space-x-2">
+            <Link to="/app/dashboard" className="flex items-center space-x-2">
               <div className="h-6 w-6 bg-gradient-to-br from-blue-600 to-blue-400 rounded-full flex items-center justify-center relative">
                 <div className="absolute inset-0.5 rounded-full border border-white opacity-30"></div>
                 <div className="w-1 h-1 bg-white rounded-full"></div>
@@ -70,14 +70,14 @@ const Header: React.FC = () => {
             {isUserMenuOpen && (
               <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg py-1 z-10">
                 <Link
-                  to="/profile"
+                  to="/app/profile"
                   className="block px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => setIsUserMenuOpen(false)}
                 >
                   Your Profile
                 </Link>
                 <Link
-                  to="/settings"
+                  to="/app/settings"
                   className="block px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => setIsUserMenuOpen(false)}
                 >
