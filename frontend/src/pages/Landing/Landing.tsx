@@ -12,7 +12,7 @@ const Landing: React.FC = () => {
           {/* Logo */}
           <div className="nav-logo">
             <div className="logo-icon">
-              <img src="./StockScopeLogo.png" alt="Stock Scope Logo" className="w-8 h-8" />
+              <img src="/Stock Scope.png" alt="Stock Scope Logo" className="w-8 h-8" />
             </div>
             <span className="logo-text">Stock Scope</span>
           </div>
@@ -330,10 +330,7 @@ const Landing: React.FC = () => {
           <div className="footer-content">
             <div className="footer-logo">
               <div className="logo-icon">
-                <div className="h-6 w-6 bg-gradient-to-br from-green-800 to-green-900 rounded-full flex items-center justify-center relative">
-                  <div className="absolute inset-1 rounded-full border border-white opacity-30"></div>
-                  <div className="w-1 h-1 bg-white rounded-full"></div>
-                </div>
+                <img src="/Stock Scope.png" alt="Stock Scope Logo" />
               </div>
               <span className="logo-text">Stock Scope</span>
             </div>
