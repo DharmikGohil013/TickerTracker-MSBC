@@ -1,4 +1,5 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
+import { api } from './apiClient';
 import {
   User,
   LoginForm,
@@ -7,50 +8,15 @@ import {
   ResetPasswordForm,
   ChangePasswordForm,
   AuthResponse,
-  ApiResponse,
 } from '../types';
-
-// Create axios instance with default config
-const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
-  withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Request interceptor to add auth token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor to handle auth errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Clear token and redirect to login
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
 
 export class AuthService {
   // Register new user
   static async register(data: RegisterForm): Promise<AuthResponse> {
     try {
-      const response: AxiosResponse<AuthResponse> = await api.post('/auth/register', data);
+      const response: AxiosResponse<AuthResponse> = await api.post('/auth/register', data, {
+        metadata: { loadingMessage: 'Creating your account...' }
+      });
       
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
@@ -65,7 +31,9 @@ export class AuthService {
   // Login user
   static async login(data: LoginForm): Promise<AuthResponse> {
     try {
-      const response: AxiosResponse<AuthResponse> = await api.post('/auth/login', data);
+      const response: AxiosResponse<AuthResponse> = await api.post('/auth/login', data, {
+        metadata: { loadingMessage: 'Signing you in...' }
+      });
       
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
@@ -102,21 +70,44 @@ export class AuthService {
   // Update user profile
   static async updateProfile(data: Partial<User>): Promise<User> {
     try {
-      const response: AxiosResponse<{ success: boolean; user: User }> = await api.put('/auth/profile', data);
+      const response: AxiosResponse<{ success: boolean; user: User }> = await api.put('/profile', data, {
+        metadata: { loadingMessage: 'Updating profile...' }
+      });
+      
+      // Validate response structure
+      if (!response.data || !response.data.user) {
+        console.error('AuthService: Invalid response structure:', response.data);
+        throw new Error('Invalid response from server');
+      }
+      
+      console.log('AuthService: Profile update response:', response.data);
       return response.data.user;
     } catch (error: any) {
+      console.error('AuthService: Profile update error:', error);
       throw new Error(error.response?.data?.message || 'Failed to update profile');
     }
   }
 
   // Update user preferences
-  static async updatePreferences(preferences: Partial<User['preferences']>): Promise<User['preferences']> {
+  static async updatePreferences(preferences: any): Promise<User['preferences']> {
     try {
       const response: AxiosResponse<{ success: boolean; preferences: User['preferences'] }> = 
-        await api.put('/auth/preferences', preferences);
+        await api.put('/profile/preferences', preferences, {
+          metadata: { loadingMessage: 'Updating preferences...' }
+        });
       return response.data.preferences;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to update preferences');
+    }
+  }
+
+  // Delete account
+  static async deleteAccount(password: string): Promise<void> {
+    try {
+      await api.delete('/profile', { data: { password } });
+      localStorage.removeItem('token');
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to delete account');
     }
   }
 

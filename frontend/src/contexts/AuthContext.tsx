@@ -174,9 +174,45 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const updateProfile = async (data: Partial<User>): Promise<void> => {
     try {
       const updatedUser = await AuthService.updateProfile(data);
-      dispatch({ type: 'UPDATE_USER', payload: updatedUser });
+      console.log('AuthContext: Received updated user:', updatedUser); // Debug log
+      console.log('AuthContext: Current user state:', state.user); // Debug log
+      
+      // Validate that we have essential user data
+      if (!updatedUser || !updatedUser.id) {
+        console.error('AuthContext: Invalid user data received:', updatedUser);
+        throw new Error('Invalid user data received from server');
+      }
+      
+      // Ensure we maintain all existing user data and properly merge the update
+      const mergedUser = {
+        ...state.user, // Start with existing user data
+        ...updatedUser, // Override with updated data
+        // Ensure preferences exist
+        preferences: {
+          ...(state.user?.preferences || {}), // Keep existing preferences
+          ...(updatedUser.preferences || {}), // Override with updated preferences if they exist
+          // Provide defaults for missing preferences
+          defaultCurrency: updatedUser.preferences?.defaultCurrency || state.user?.preferences?.defaultCurrency || 'USD',
+          watchlist: updatedUser.preferences?.watchlist || state.user?.preferences?.watchlist || [],
+          portfolios: updatedUser.preferences?.portfolios || state.user?.preferences?.portfolios || [],
+          notifications: {
+            ...(state.user?.preferences?.notifications || {}),
+            ...(updatedUser.preferences?.notifications || {}),
+            priceAlerts: updatedUser.preferences?.notifications?.priceAlerts ?? state.user?.preferences?.notifications?.priceAlerts ?? true,
+            portfolioUpdates: updatedUser.preferences?.notifications?.portfolioUpdates ?? state.user?.preferences?.notifications?.portfolioUpdates ?? true,
+            marketNews: updatedUser.preferences?.notifications?.marketNews ?? state.user?.preferences?.notifications?.marketNews ?? false,
+            emailNotifications: updatedUser.preferences?.notifications?.emailNotifications ?? state.user?.preferences?.notifications?.emailNotifications ?? true
+          },
+          riskTolerance: updatedUser.preferences?.riskTolerance || state.user?.preferences?.riskTolerance || 'moderate',
+          investmentExperience: updatedUser.preferences?.investmentExperience || state.user?.preferences?.investmentExperience || 'beginner'
+        }
+      };
+      
+      console.log('AuthContext: Merged user data:', mergedUser); // Debug log
+      dispatch({ type: 'UPDATE_USER', payload: mergedUser });
       toast.success('Profile updated successfully!');
     } catch (error: any) {
+      console.error('AuthContext: Profile update error:', error);
       const errorMessage = error.message || 'Failed to update profile';
       toast.error(errorMessage);
       throw error;

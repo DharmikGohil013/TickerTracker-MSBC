@@ -13,7 +13,7 @@ import {
   AreaChart
 } from 'recharts';
 import { Icons } from '../../components/Icons/Icons';
-import stockService, { StockData, HistoricalDataPoint, NewsItem, Alert } from '../../services/stockService';
+import { StockService, StockQuote, NewsItem, TimeSeriesData, CompanyProfile } from '../../services/stockService';
 import '../Auth/Auth.css';
 import './Home.css';
 
@@ -130,10 +130,10 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   
   // API Data State
-  const [stockData, setStockData] = useState<StockData | null>(null);
-  const [historicalData, setHistoricalData] = useState<HistoricalDataPoint[]>([]);
+  const [stockData, setStockData] = useState<StockQuote | null>(null);
+  const [historicalData, setHistoricalData] = useState<TimeSeriesData[]>([]);
   const [newsData, setNewsData] = useState<NewsItem[]>([]);
-  const [alertsData, setAlertsData] = useState<Alert[]>([]);
+  const [alertsData, setAlertsData] = useState<any[]>([]);
   const [sentimentData, setSentimentData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -167,12 +167,10 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
     
     try {
       // Fetch data in parallel
-      const [stock, historical, news, alerts, sentiment] = await Promise.allSettled([
-        stockService.getStockData(symbol),
-        stockService.getHistoricalData(symbol, '1M'),
-        stockService.getSymbolNews(symbol, 10),
-        stockService.getSymbolAlerts(symbol),
-        stockService.getSocialSentiment(symbol)
+      const [stock, historical, news] = await Promise.allSettled([
+        StockService.getStockQuote(symbol),
+        StockService.getTimeSeries(symbol, '1M'),
+        StockService.getCompanyNews(symbol, 10)
       ]);
 
       // Handle stock data
@@ -188,7 +186,14 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
       } else {
         console.error('Failed to fetch historical data:', historical.reason);
         // Fallback to mock data for chart display
-        setHistoricalData(generateMockPriceData(symbol));
+        setHistoricalData(generateMockPriceData(symbol).map(d => ({
+          timestamp: d.date,
+          open: d.open,
+          high: d.high,
+          low: d.low,
+          close: d.close,
+          volume: d.volume
+        })));
       }
 
       // Handle news data
@@ -199,44 +204,32 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
         // Fallback to mock news
         setNewsData(mockNews.map((item, index) => ({
           id: index.toString(),
-          headline: item.title,
+          title: item.title,
           summary: item.summary,
+          content: item.summary,
           url: item.link,
           source: item.source,
-          publishedAt: item.time,
+          publishedAt: new Date().toISOString(),
           sentiment: item.sentiment as 'positive' | 'negative' | 'neutral'
         })));
       }
 
-      // Handle alerts data
-      if (alerts.status === 'fulfilled') {
-        setAlertsData(alerts.value);
-      } else {
-        console.error('Failed to fetch alerts:', alerts.reason);
-        // Fallback to mock alerts
-        setAlertsData(mockAlerts.map((item, index) => ({
-          id: index.toString(),
-          type: item.type as 'price_move' | 'volume_spike' | 'news_alert' | 'technical_signal',
-          title: item.title,
-          message: item.message,
-          severity: 'medium' as 'low' | 'medium' | 'high' | 'critical',
-          timestamp: item.time,
-          symbol: symbol
-        })));
-      }
+      // Mock alerts and sentiment for now
+      setAlertsData(mockAlerts.map((item, index) => ({
+        id: index.toString(),
+        type: item.type,
+        title: item.title,
+        message: item.message,
+        severity: 'medium',
+        timestamp: new Date().toISOString(),
+        symbol: symbol
+      })));
 
-      // Handle sentiment data
-      if (sentiment.status === 'fulfilled') {
-        setSentimentData(sentiment.value);
-      } else {
-        console.error('Failed to fetch sentiment:', sentiment.reason);
-        // Fallback sentiment data
-        setSentimentData({
-          bullishPercent: 72,
-          bearishPercent: 28,
-          sentiment: 'bullish'
-        });
-      }
+      setSentimentData({
+        bullishPercent: 72,
+        bearishPercent: 28,
+        sentiment: 'bullish'
+      });
 
     } catch (err) {
       setError('Failed to fetch stock data. Please try again.');
@@ -253,22 +246,33 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
 
   // Fallback to mock data for chart display
   const chartData = historicalData.length > 0 ? historicalData.map(point => ({
-    date: point.date,
+    date: point.timestamp,
     price: point.close,
     volume: point.volume,
     high: point.high,
     low: point.low
-  })) : generateMockPriceData(selectedTicker);
+  })) : generateMockPriceData(selectedTicker).map(d => ({
+    date: d.date,
+    price: d.close,
+    volume: d.volume,
+    high: d.high,
+    low: d.low
+  }));
 
   const currentPrice = stockData ? {
     price: stockData.price,
-    high: stockData.high,
-    low: stockData.low,
+    high: stockData.high52Week || stockData.price * 1.02,
+    low: stockData.low52Week || stockData.price * 0.98,
     volume: stockData.volume
-  } : chartData[chartData.length - 1];
+  } : {
+    price: chartData[chartData.length - 1].price,
+    high: chartData[chartData.length - 1].high,
+    low: chartData[chartData.length - 1].low,
+    volume: chartData[chartData.length - 1].volume
+  };
 
-  const previousPrice = stockData ? stockData.previousClose : chartData[chartData.length - 2]?.close || currentPrice.close;
-  const priceChange = stockData ? stockData.change : currentPrice.close - previousPrice;
+  const previousPrice = stockData ? (stockData.price - stockData.change) : (chartData[chartData.length - 2]?.price || currentPrice.price);
+  const priceChange = stockData ? stockData.change : currentPrice.price - previousPrice;
   const percentChange = stockData ? stockData.changePercent : (priceChange / previousPrice) * 100;
 
   // Enhanced search functionality
@@ -287,7 +291,7 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
     
     if (value.length > 1) {
       try {
-        const suggestions = await stockService.searchStocks(value);
+        const suggestions = await StockService.searchStocks(value);
         setSearchSuggestions(suggestions.slice(0, 5)); // Limit to 5 suggestions
         setShowSuggestions(true);
       } catch (error) {
@@ -625,7 +629,7 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
                     </div>
                   </div>
                   <div className="news-content">
-                    <h4 className="news-title">{news.headline}</h4>
+                    <h4 className="news-title">{news.title}</h4>
                     <p className="news-summary">{news.summary}</p>
                     <a href={news.url} target="_blank" rel="noopener noreferrer" className="news-link">
                       Read more →
@@ -696,7 +700,7 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
                       {priceChange >= 0 ? 'Bullish' : 'Bearish'}
                     </span>
                     <span className="prediction-target">
-                      Target: ${stockService.formatCurrency(currentPrice.price * 1.05).replace('$', '')}
+                      Target: ${StockService.formatCurrency(currentPrice.price * 1.05).replace('$', '')}
                     </span>
                     <span className="prediction-timeframe">7-day forecast</span>
                   </div>
