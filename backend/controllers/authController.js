@@ -93,19 +93,22 @@ const register = async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     // Send OTP email (always succeeds now with fallback)
+    console.log(`\n🚀 Starting email sending process for user: ${user.email}`);
     const emailResult = await emailService.sendOTPEmail(user.email, otp, user.firstName);
     
-    console.log(`✅ Registration completed for ${user.email}. OTP: ${otp}`);
+    console.log(`✅ Registration completed for ${user.email}`);
+    console.log(`📧 Email sending result:`, emailResult);
+    console.log(`🔐 Generated OTP: ${otp} (expires in 10 minutes)`);
 
     // Helper function to get appropriate message based on email method
     const getEmailMessage = (method) => {
       switch (method) {
         case 'email':
-          return 'OTP sent to your email address';
+          return 'OTP sent to your email address successfully!';
         case 'console':
           return 'OTP displayed in console (development mode)';
         case 'fallback':
-          return 'Email service unavailable - OTP displayed in server console';
+          return 'Email service temporarily unavailable - OTP displayed in server console';
         default:
           return 'Registration completed - check console for OTP';
       }
@@ -584,9 +587,12 @@ const resendOTP = async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     // Send OTP email (always succeeds with fallback)
+    console.log(`\n🔄 Resending OTP for user: ${user.email}`);
     const emailResult = await emailService.sendOTPEmail(user.email, otp, user.firstName);
     
-    console.log(`✅ New OTP sent to ${user.email}: ${otp}`);
+    console.log(`✅ New OTP sent to ${user.email}`);
+    console.log(`📧 Email sending result:`, emailResult);
+    console.log(`🔐 New OTP: ${otp} (expires in 10 minutes)`);
 
     res.status(200).json({
       success: true,
