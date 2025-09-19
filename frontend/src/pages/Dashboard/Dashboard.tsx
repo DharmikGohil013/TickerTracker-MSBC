@@ -1,15 +1,13 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Icons } from '../../components/Icons/Icons';
-import { StockService, StockQuote, MarketOverview } from '../../services/stockService';
+import { StockService, MarketOverview } from '../../services/stockService';
 import './Dashboard.css';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [marketData, setMarketData] = useState<MarketOverview | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   // Mock data for fallback
   const mockTopMovers = {
@@ -31,12 +29,9 @@ export default function Dashboard() {
   // Fetch market data
   const fetchMarketData = async () => {
     try {
-      setLoading(true);
-      setError(null);
       const data = await StockService.getMarketOverview();
       setMarketData(data);
     } catch (err: any) {
-      setError(err.message);
       console.error('Error fetching market data:', err);
       // Use mock data as fallback
       setMarketData({
@@ -45,8 +40,6 @@ export default function Dashboard() {
         marketStatus: 'open',
         lastUpdated: new Date().toISOString()
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -82,163 +75,177 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-page">
-      {/* Main Dashboard Content */}
-      <main className="dashboard-main">
-        <div className="dashboard-content">
-          <div className="dashboard-header">
-            <h1>Welcome back, {user?.firstName || user?.username || 'User'}!</h1>
-            <p>Here's what's happening with your portfolio and watchlist today.</p>
-          </div>
+      <div className="dashboard-container">
+        {/* Dashboard Header */}
+        <div className="dashboard-header">
+          <h1 className="dashboard-title">
+            Welcome back, {user?.firstName || user?.username || 'Trader'}!
+          </h1>
+          <p className="dashboard-subtitle">
+            Track markets, manage your portfolio, and stay ahead of the trends
+          </p>
+        </div>
 
-          {/* Market Overview Section */}
-          <div className="market-overview-section">
-            <h2 className="section-title">Market Overview</h2>
-            <div className="market-overview-cards">
-              {/* Top Gainers */}
-              <div className="market-card">
-                <div className="market-card-header">
-                  <h3>Top Gainers</h3>
-                  <Icons.TrendingUp className="trend-icon gain" />
+        {/* Market Overview Section */}
+        <div className="market-overview-section">
+          <h2 className="section-title">Market Overview</h2>
+          <div className="market-overview-cards">
+            {/* Top Gainers */}
+            <div className="market-card">
+              <div className="market-card-header">
+                <h3>Top Gainers</h3>
+                <div className="trend-icon gain">
+                  <Icons.TrendingUp />
                 </div>
-                <div className="market-card-content">
-                  {topGainers.map((stock) => (
-                    <div key={stock.symbol} className="stock-item">
-                      <div className="stock-info">
-                        <span className="stock-symbol">{stock.symbol}</span>
-                        <span className="stock-name">{stock.name}</span>
-                      </div>
-                      <div className="stock-metrics">
-                        <span className="stock-price">{formatCurrency(stock.price)}</span>
-                        <span className="stock-change positive">
-                          +{stock.changePercent.toFixed(2)}%
-                        </span>
-                      </div>
+              </div>
+              <div className="market-card-content">
+                {topGainers.map((stock) => (
+                  <div key={stock.symbol} className="stock-item">
+                    <div className="stock-info">
+                      <span className="stock-symbol">{stock.symbol}</span>
+                      <span className="stock-name">{stock.name}</span>
                     </div>
-                  ))}
-                </div>
-                <Link to="/market" className="market-card-link">
-                  View All Gainers
-                  <Icons.ArrowRight className="arrow-icon" />
-                </Link>
-              </div>
-
-              {/* Top Losers */}
-              <div className="market-card">
-                <div className="market-card-header">
-                  <h3>Top Losers</h3>
-                  <Icons.TrendingDown className="trend-icon loss" />
-                </div>
-                <div className="market-card-content">
-                  {topLosers.map((stock) => (
-                    <div key={stock.symbol} className="stock-item">
-                      <div className="stock-info">
-                        <span className="stock-symbol">{stock.symbol}</span>
-                        <span className="stock-name">{stock.name}</span>
-                      </div>
-                      <div className="stock-metrics">
-                        <span className="stock-price">{formatCurrency(stock.price)}</span>
-                        <span className="stock-change negative">
-                          {stock.changePercent.toFixed(2)}%
-                        </span>
-                      </div>
+                    <div className="stock-metrics">
+                      <span className="stock-price">{formatCurrency(stock.price)}</span>
+                      <span className="stock-change positive">
+                        +{stock.changePercent.toFixed(2)}%
+                      </span>
                     </div>
-                  ))}
+                  </div>
+                ))}
+              </div>
+              <Link to="/market" className="market-card-link">
+                View All Gainers
+                <div className="arrow-icon">
+                  <Icons.ChevronDown />
                 </div>
-                <Link to="/market" className="market-card-link">
-                  View All Losers
-                  <Icons.ArrowRight className="arrow-icon" />
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="dashboard-grid">
-            {/* Market Overview Card */}
-            <div className="dashboard-card">
-              <div className="card-header">
-                <Icons.TrendingUp />
-                <h3>Market Overview</h3>
-              </div>
-              <div className="card-content">
-                <p>Track the latest market trends and performance indicators.</p>
-                <Link to="/app/market" className="card-link">
-                  View Market →
-                </Link>
-              </div>
+              </Link>
             </div>
 
-            {/* Portfolio Summary Card */}
-            <div className="dashboard-card">
-              <div className="card-header">
-                <Icons.Portfolio />
-                <h3>Portfolio</h3>
+            {/* Top Losers */}
+            <div className="market-card">
+              <div className="market-card-header">
+                <h3>Top Losers</h3>
+                <div className="trend-icon loss">
+                  <Icons.TrendingDown />
+                </div>
               </div>
-              <div className="card-content">
-                <p>Monitor your investments and track performance.</p>
-                <Link to="/app/portfolio" className="card-link">
-                  View Portfolio →
-                </Link>
+              <div className="market-card-content">
+                {topLosers.map((stock) => (
+                  <div key={stock.symbol} className="stock-item">
+                    <div className="stock-info">
+                      <span className="stock-symbol">{stock.symbol}</span>
+                      <span className="stock-name">{stock.name}</span>
+                    </div>
+                    <div className="stock-metrics">
+                      <span className="stock-price">{formatCurrency(stock.price)}</span>
+                      <span className="stock-change negative">
+                        {stock.changePercent.toFixed(2)}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-
-            {/* Watchlist Card */}
-            <div className="dashboard-card">
-              <div className="card-header">
-                <Icons.Heart />
-                <h3>Watchlist</h3>
-              </div>
-              <div className="card-content">
-                <p>Keep track of stocks you're interested in.</p>
-                <Link to="/app/watchlist" className="card-link">
-                  View Watchlist →
-                </Link>
-              </div>
-            </div>
-
-            {/* News & Insights Card */}
-            <div className="dashboard-card">
-              <div className="card-header">
-                <Icons.News />
-                <h3>Market News</h3>
-              </div>
-              <div className="card-content">
-                <p>Stay updated with the latest financial news and insights.</p>
-                <Link to="/app/news" className="card-link">
-                  Read News →
-                </Link>
-              </div>
-            </div>
-
-            {/* Search Card */}
-            <div className="dashboard-card">
-              <div className="card-header">
-                <Icons.Search />
-                <h3>Stock Search</h3>
-              </div>
-              <div className="card-content">
-                <p>Search and analyze individual stocks and ETFs.</p>
-                <Link to="/app/search" className="card-link">
-                  Search Stocks →
-                </Link>
-              </div>
-            </div>
-
-            {/* Analytics Card */}
-            <div className="dashboard-card">
-              <div className="card-header">
-                <Icons.Chart />
-                <h3>Analytics</h3>
-              </div>
-              <div className="card-content">
-                <p>Advanced analytics and performance insights.</p>
-                <Link to="/app/analytics" className="card-link">
-                  View Analytics →
-                </Link>
-              </div>
+              <Link to="/market" className="market-card-link">
+                View All Losers
+                <div className="arrow-icon">
+                  <Icons.ChevronDown />
+                </div>
+              </Link>
             </div>
           </div>
         </div>
-      </main>
+
+        {/* Quick Actions Section */}
+        <div className="quick-actions-section">
+          <h2 className="section-title">Quick Actions</h2>
+          <div className="dashboard-grid">
+            {/* Market Overview Card */}
+            <Link to="/market" className="dashboard-card">
+              <div className="card-icon">
+                <Icons.TrendingUp />
+              </div>
+              <div className="card-content">
+                <h3>Market Overview</h3>
+                <p>Track the latest market trends and performance indicators</p>
+              </div>
+              <div className="card-arrow">
+                <Icons.ChevronDown />
+              </div>
+            </Link>
+
+            {/* Portfolio Summary Card */}
+            <Link to="/portfolio" className="dashboard-card">
+              <div className="card-icon">
+                <Icons.Portfolio />
+              </div>
+              <div className="card-content">
+                <h3>Portfolio</h3>
+                <p>Monitor your investments and track performance</p>
+              </div>
+              <div className="card-arrow">
+                <Icons.ChevronDown />
+              </div>
+            </Link>
+
+            {/* Watchlist Card */}
+            <Link to="/watchlist" className="dashboard-card">
+              <div className="card-icon">
+                <Icons.Heart />
+              </div>
+              <div className="card-content">
+                <h3>Watchlist</h3>
+                <p>Keep track of stocks you're interested in</p>
+              </div>
+              <div className="card-arrow">
+                <Icons.ChevronDown />
+              </div>
+            </Link>
+
+            {/* News & Insights Card */}
+            <Link to="/news" className="dashboard-card">
+              <div className="card-icon">
+                <Icons.News />
+              </div>
+              <div className="card-content">
+                <h3>Market News</h3>
+                <p>Stay updated with the latest financial news and insights</p>
+              </div>
+              <div className="card-arrow">
+                <Icons.ChevronDown />
+              </div>
+            </Link>
+
+            {/* Search Card */}
+            <Link to="/search" className="dashboard-card">
+              <div className="card-icon">
+                <Icons.Search />
+              </div>
+              <div className="card-content">
+                <h3>Stock Search</h3>
+                <p>Search and analyze individual stocks and ETFs</p>
+              </div>
+              <div className="card-arrow">
+                <Icons.ChevronDown />
+              </div>
+            </Link>
+
+            {/* Analytics Card */}
+            <Link to="/analytics" className="dashboard-card">
+              <div className="card-icon">
+                <Icons.Chart />
+              </div>
+              <div className="card-content">
+                <h3>Analytics</h3>
+                <p>Advanced analytics and performance insights</p>
+              </div>
+              <div className="card-arrow">
+                <Icons.ChevronDown />
+              </div>
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
