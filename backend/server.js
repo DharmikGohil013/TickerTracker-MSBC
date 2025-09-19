@@ -9,6 +9,10 @@ require('dotenv').config();
 
 const connectDB = require('./config/database');
 const authRoutes = require('./routes/auth');
+const stockRoutes = require('./routes/stock');
+const newsRoutes = require('./routes/news');
+const alertsRoutes = require('./routes/alerts');
+const watchlistRoutes = require('./routes/watchlist');
 
 const app = express();
 
@@ -55,6 +59,10 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/auth', watchlistRoutes); // Add watchlist routes under /api/auth
+app.use('/api/stock', stockRoutes);
+app.use('/api/news', newsRoutes);
+app.use('/api/alerts', alertsRoutes);
 
 // Default route
 app.get('/', (req, res) => {
@@ -63,6 +71,9 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     endpoints: {
       auth: '/api/auth',
+      stock: '/api/stock',
+      news: '/api/news',
+      alerts: '/api/alerts',
       health: '/health',
     },
   });

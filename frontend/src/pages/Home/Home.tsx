@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LineChart, 
   Line, 
@@ -13,6 +13,7 @@ import {
   AreaChart
 } from 'recharts';
 import { Icons } from '../../components/Icons/Icons';
+import stockService, { StockData, HistoricalDataPoint, NewsItem, Alert } from '../../services/stockService';
 import '../Auth/Auth.css';
 import './Home.css';
 
@@ -122,23 +123,202 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
   const [selectedMarket, setSelectedMarket] = useState('US');
   const [tickerInput, setTickerInput] = useState('');
   const [chartType, setChartType] = useState<'line' | 'area'>('area');
+  const [searchSuggestions, setSearchSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  
+  // API Data State
+  const [stockData, setStockData] = useState<StockData | null>(null);
+  const [historicalData, setHistoricalData] = useState<HistoricalDataPoint[]>([]);
+  const [newsData, setNewsData] = useState<NewsItem[]>([]);
+  const [alertsData, setAlertsData] = useState<Alert[]>([]);
+  const [sentimentData, setSentimentData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const priceData = generateMockPriceData(selectedTicker);
-  const currentPrice = priceData[priceData.length - 1];
-  const previousPrice = priceData[priceData.length - 2];
-  const priceChange = currentPrice.price - previousPrice.price;
-  const percentChange = (priceChange / previousPrice.price) * 100;
-
-  const handleTickerSearch = () => {
-    if (tickerInput.trim()) {
-      setSelectedTicker(tickerInput.toUpperCase());
-      setTickerInput('');
+  // Market configuration
+  const marketConfig = {
+    'US': {
+      name: 'US Market',
+      examples: ['AAPL', 'TSLA', 'MSFT', 'GOOGL', 'AMZN'],
+      placeholder: 'Enter US stock symbol (e.g., AAPL, TSLA, MSFT)',
+      currency: 'USD'
+    },
+    'Indian': {
+      name: 'Indian Market',
+      examples: ['RELIANCE', 'INFY', 'TCS', 'BHARTIARTL', 'HDFCBANK'],
+      placeholder: 'Enter Indian stock symbol (e.g., RELIANCE, INFY, TCS)',
+      currency: 'INR'
+    },
+    'Crypto': {
+      name: 'Cryptocurrency',
+      examples: ['BTC', 'ETH', 'BNB', 'ADA', 'DOT'],
+      placeholder: 'Enter crypto symbol (e.g., BTC, ETH, BNB)',
+      currency: 'USD'
     }
+  };
+
+  // Fetch all data for selected ticker
+  const fetchStockData = async (symbol: string) => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Fetch data in parallel
+      const [stock, historical, news, alerts, sentiment] = await Promise.allSettled([
+        stockService.getStockData(symbol),
+        stockService.getHistoricalData(symbol, '1M'),
+        stockService.getSymbolNews(symbol, 10),
+        stockService.getSymbolAlerts(symbol),
+        stockService.getSocialSentiment(symbol)
+      ]);
+
+      // Handle stock data
+      if (stock.status === 'fulfilled') {
+        setStockData(stock.value);
+      } else {
+        console.error('Failed to fetch stock data:', stock.reason);
+      }
+
+      // Handle historical data
+      if (historical.status === 'fulfilled') {
+        setHistoricalData(historical.value);
+      } else {
+        console.error('Failed to fetch historical data:', historical.reason);
+        // Fallback to mock data for chart display
+        setHistoricalData(generateMockPriceData(symbol));
+      }
+
+      // Handle news data
+      if (news.status === 'fulfilled') {
+        setNewsData(news.value);
+      } else {
+        console.error('Failed to fetch news:', news.reason);
+        // Fallback to mock news
+        setNewsData(mockNews.map((item, index) => ({
+          id: index.toString(),
+          headline: item.title,
+          summary: item.summary,
+          url: item.link,
+          source: item.source,
+          publishedAt: item.time,
+          sentiment: item.sentiment as 'positive' | 'negative' | 'neutral'
+        })));
+      }
+
+      // Handle alerts data
+      if (alerts.status === 'fulfilled') {
+        setAlertsData(alerts.value);
+      } else {
+        console.error('Failed to fetch alerts:', alerts.reason);
+        // Fallback to mock alerts
+        setAlertsData(mockAlerts.map((item, index) => ({
+          id: index.toString(),
+          type: item.type as 'price_move' | 'volume_spike' | 'news_alert' | 'technical_signal',
+          title: item.title,
+          message: item.message,
+          severity: 'medium' as 'low' | 'medium' | 'high' | 'critical',
+          timestamp: item.time,
+          symbol: symbol
+        })));
+      }
+
+      // Handle sentiment data
+      if (sentiment.status === 'fulfilled') {
+        setSentimentData(sentiment.value);
+      } else {
+        console.error('Failed to fetch sentiment:', sentiment.reason);
+        // Fallback sentiment data
+        setSentimentData({
+          bullishPercent: 72,
+          bearishPercent: 28,
+          sentiment: 'bullish'
+        });
+      }
+
+    } catch (err) {
+      setError('Failed to fetch stock data. Please try again.');
+      console.error('Error fetching stock data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load initial data
+  useEffect(() => {
+    fetchStockData(selectedTicker);
+  }, [selectedTicker]);
+
+  // Fallback to mock data for chart display
+  const chartData = historicalData.length > 0 ? historicalData.map(point => ({
+    date: point.date,
+    price: point.close,
+    volume: point.volume,
+    high: point.high,
+    low: point.low
+  })) : generateMockPriceData(selectedTicker);
+
+  const currentPrice = stockData ? {
+    price: stockData.price,
+    high: stockData.high,
+    low: stockData.low,
+    volume: stockData.volume
+  } : chartData[chartData.length - 1];
+
+  const previousPrice = stockData ? stockData.previousClose : chartData[chartData.length - 2]?.price || currentPrice.price;
+  const priceChange = stockData ? stockData.change : currentPrice.price - previousPrice;
+  const percentChange = stockData ? stockData.changePercent : (priceChange / previousPrice) * 100;
+
+  // Enhanced search functionality
+  const handleTickerSearch = async () => {
+    if (tickerInput.trim()) {
+      const symbol = tickerInput.toUpperCase();
+      setSelectedTicker(symbol);
+      setTickerInput('');
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setTickerInput(value);
+    
+    if (value.length > 1) {
+      try {
+        const suggestions = await stockService.searchStocks(value);
+        setSearchSuggestions(suggestions.slice(0, 5)); // Limit to 5 suggestions
+        setShowSuggestions(true);
+      } catch (error) {
+        console.error('Error fetching suggestions:', error);
+        setSearchSuggestions([]);
+      }
+    } else {
+      setShowSuggestions(false);
+      setSearchSuggestions([]);
+    }
+  };
+
+  const handleSuggestionClick = (symbol: string) => {
+    setSelectedTicker(symbol);
+    setTickerInput('');
+    setShowSuggestions(false);
+  };
+
+  const handleMarketChange = (market: string) => {
+    setSelectedMarket(market);
+    // Set default ticker for the selected market
+    const defaultTickers = {
+      'US': 'AAPL',
+      'Indian': 'RELIANCE', 
+      'Crypto': 'BTC'
+    };
+    setSelectedTicker(defaultTickers[market as keyof typeof defaultTickers] || 'AAPL');
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleTickerSearch();
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
     }
   };
 
@@ -183,31 +363,70 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
         <div className="search-container">
           <div className="ticker-search">
             <div className="search-input-group">
-              <input
-                type="text"
-                placeholder="Enter ticker symbol (e.g., AAPL, TSLA, BTC)"
-                value={tickerInput}
-                onChange={(e) => setTickerInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                className="ticker-input"
-              />
-              <button onClick={handleTickerSearch} className="search-btn">
+              <div className="search-wrapper">
+                <input
+                  type="text"
+                  placeholder={marketConfig[selectedMarket as keyof typeof marketConfig]?.placeholder || "Enter ticker symbol"}
+                  value={tickerInput}
+                  onChange={handleInputChange}
+                  onKeyPress={handleKeyPress}
+                  onFocus={() => tickerInput.length > 1 && setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  className="ticker-input"
+                />
+                {showSuggestions && searchSuggestions.length > 0 && (
+                  <div className="search-suggestions">
+                    {searchSuggestions.map((suggestion, index) => (
+                      <div
+                        key={index}
+                        className="suggestion-item"
+                        onClick={() => handleSuggestionClick(suggestion.symbol)}
+                      >
+                        <span className="suggestion-symbol">{suggestion.symbol}</span>
+                        <span className="suggestion-name">{suggestion.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button 
+                onClick={handleTickerSearch} 
+                className="search-btn"
+                title="Search"
+                aria-label="Search for ticker"
+              >
                 <Icons.Search />
               </button>
             </div>
             <select 
               value={selectedMarket} 
-              onChange={(e) => setSelectedMarket(e.target.value)}
+              onChange={(e) => handleMarketChange(e.target.value)}
               className="market-dropdown"
+              title="Select Market"
+              aria-label="Select market type"
             >
-              <option value="US">US Market</option>
-              <option value="Indian">Indian Market</option>
-              <option value="Crypto">Cryptocurrency</option>
+              <option value="US">🇺🇸 US Market</option>
+              <option value="Indian">🇮🇳 Indian Market</option>
+              <option value="Crypto">₿ Cryptocurrency</option>
             </select>
           </div>
           <div className="current-selection">
             <span className="selected-ticker">{selectedTicker}</span>
-            <span className="selected-market">({selectedMarket})</span>
+            <span className="selected-market">
+              ({marketConfig[selectedMarket as keyof typeof marketConfig]?.name})
+            </span>
+            <div className="market-examples">
+              <span className="examples-label">Popular: </span>
+              {marketConfig[selectedMarket as keyof typeof marketConfig]?.examples.map((example, index) => (
+                <span 
+                  key={example}
+                  className="example-ticker"
+                  onClick={() => handleSuggestionClick(example)}
+                >
+                  {example}{index < (marketConfig[selectedMarket as keyof typeof marketConfig]?.examples.length || 0) - 1 ? ', ' : ''}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -253,7 +472,7 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
               <div className="price-chart">
                 <ResponsiveContainer width="100%" height={250}>
                   {chartType === 'area' ? (
-                    <AreaChart data={priceData}>
+                    <AreaChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                       <XAxis 
                         dataKey="date" 
@@ -288,7 +507,7 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
                       />
                     </AreaChart>
                   ) : (
-                    <LineChart data={priceData}>
+                    <LineChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                       <XAxis 
                         dataKey="date" 
@@ -324,7 +543,7 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
               <div className="volume-chart">
                 <h4 className="chart-title">Volume Trends</h4>
                 <ResponsiveContainer width="100%" height={120}>
-                  <BarChart data={priceData.slice(-7)}>
+                  <BarChart data={chartData.slice(-7)}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                     <XAxis 
                       dataKey="date" 
@@ -380,21 +599,32 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
           <section className="news-section">
             <div className="section-header">
               <h2>News Feed</h2>
+              {loading && <span className="loading-indicator">Loading...</span>}
             </div>
             <div className="news-feed">
-              {mockNews.map((news) => (
-                <article key={news.id} className={`news-card ${news.sentiment}`}>
+              {error && (
+                <div className="error-message">
+                  {error}
+                </div>
+              )}
+              {newsData.map((news, index) => (
+                <article key={news.id || index} className={`news-card ${news.sentiment || 'neutral'}`}>
                   <div className="news-header">
-                    <span className="sentiment-icon">{news.icon}</span>
+                    <span className="sentiment-icon">
+                      {news.sentiment === 'positive' ? '😃' : 
+                       news.sentiment === 'negative' ? '😡' : '😐'}
+                    </span>
                     <div className="news-meta">
                       <span className="news-source">{news.source}</span>
-                      <span className="news-time">{news.time}</span>
+                      <span className="news-time">
+                        {news.publishedAt ? new Date(news.publishedAt).toLocaleString() : 'Unknown time'}
+                      </span>
                     </div>
                   </div>
                   <div className="news-content">
-                    <h4 className="news-title">{news.title}</h4>
+                    <h4 className="news-title">{news.headline}</h4>
                     <p className="news-summary">{news.summary}</p>
-                    <a href={news.link} className="news-link">
+                    <a href={news.url} target="_blank" rel="noopener noreferrer" className="news-link">
                       Read more →
                     </a>
                   </div>
@@ -414,26 +644,39 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
                 <h4>Market Sentiment</h4>
                 <div className="sentiment-indicator">
                   <div className="sentiment-score bullish">
-                    <span className="sentiment-value">72%</span>
-                    <span className="sentiment-label">Bullish</span>
+                    <span className="sentiment-value">
+                      {sentimentData ? `${sentimentData.bullishPercent || 72}%` : '72%'}
+                    </span>
+                    <span className="sentiment-label">
+                      {sentimentData ? sentimentData.sentiment || 'Bullish' : 'Bullish'}
+                    </span>
                   </div>
                   <div className="sentiment-bar">
-                    <div className="sentiment-fill" style={{width: '72%'}}></div>
+                    <div 
+                      className="sentiment-fill" 
+                      data-width={sentimentData ? sentimentData.bullishPercent || 72 : 72}
+                    ></div>
                   </div>
                 </div>
               </div>
 
               <div className="alerts-list">
                 <h4 className="alerts-title">Breaking News & Alerts</h4>
-                {mockAlerts.map((alert) => (
-                  <div key={alert.id} className={`alert-item ${alert.type}`}>
+                {alertsData.map((alert, index) => (
+                  <div key={alert.id || index} className={`alert-item ${alert.type}`}>
                     <div className="alert-indicator">
-                      <span className="alert-emoji">{alert.icon}</span>
+                      <span className="alert-emoji">
+                        {alert.type === 'price_move' ? '🔴' :
+                         alert.type === 'volume_spike' ? '🟡' :
+                         alert.type === 'news_alert' ? '🔵' : '🟢'}
+                      </span>
                     </div>
                     <div className="alert-content">
                       <h5>{alert.title}</h5>
                       <p>{alert.message}</p>
-                      <span className="alert-time">{alert.time}</span>
+                      <span className="alert-time">
+                        {alert.timestamp ? new Date(alert.timestamp).toLocaleString() : 'Just now'}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -446,13 +689,19 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
                     <Icons.TrendingUp />
                   </div>
                   <div className="prediction-details">
-                    <span className="prediction-direction bullish">Bullish</span>
-                    <span className="prediction-target">Target: ${(currentPrice.price * 1.05).toFixed(2)}</span>
+                    <span className="prediction-direction bullish">
+                      {priceChange >= 0 ? 'Bullish' : 'Bearish'}
+                    </span>
+                    <span className="prediction-target">
+                      Target: ${stockService.formatCurrency(currentPrice.price * 1.05).replace('$', '')}
+                    </span>
                     <span className="prediction-timeframe">7-day forecast</span>
                   </div>
                   <div className="prediction-confidence">
                     <span className="confidence-label">Confidence</span>
-                    <span className="confidence-value">87%</span>
+                    <span className="confidence-value">
+                      {sentimentData ? `${Math.min(sentimentData.bullishPercent + 15, 99)}%` : '87%'}
+                    </span>
                   </div>
                 </div>
               </div>
