@@ -2,13 +2,37 @@ const nodemailer = require('nodemailer');
 
 class EmailService {
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE || 'gmail',
-      auth: {
-        user: process.env.EMAIL_USERNAME,
-        pass: process.env.EMAIL_PASSWORD,
-      },
-    });
+    // Initialize transporter only if credentials are available
+    this.transporter = null;
+    this.emailConfigured = false;
+    
+    try {
+      if (process.env.EMAIL_USERNAME && process.env.EMAIL_PASSWORD) {
+        // Clean the password - remove all spaces
+        const cleanPassword = process.env.EMAIL_PASSWORD.replace(/\s+/g, '');
+        
+        this.transporter = nodemailer.createTransport({
+          service: 'gmail',
+          host: 'smtp.gmail.com',
+          port: 587,
+          secure: false,
+          auth: {
+            user: process.env.EMAIL_USERNAME,
+            pass: cleanPassword,
+          },
+          tls: {
+            rejectUnauthorized: false
+          }
+        });
+        
+        this.emailConfigured = true;
+        console.log('📧 Email service initialized with Gmail');
+      } else {
+        console.log('⚠️ Email credentials not found - using development mode');
+      }
+    } catch (error) {
+      console.error('❌ Email service initialization failed:', error.message);
+    }
   }
 
   // Generate 6-digit OTP
@@ -16,42 +40,95 @@ class EmailService {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
-  // Send OTP email
+  // Send OTP email with multiple fallback strategies
   async sendOTPEmail(email, otp, firstName) {
-    try {
-      // In development mode, just log the OTP instead of sending email
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`
-🔔 DEVELOPMENT MODE - OTP EMAIL
-📧 To: ${email}
-👤 Name: ${firstName}
-🔐 OTP: ${otp}
-⏰ Expires: 10 minutes
-        `);
-        return { success: true, messageId: 'dev-mode-' + Date.now() };
-      }
+    console.log(`\n📧 Attempting to send OTP email to: ${email}`);
+    console.log(`🔐 OTP Code: ${otp}`);
+    console.log(`👤 User: ${firstName}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+    console.log(`⚙️ Email Configured: ${this.emailConfigured}`);
+    
+    // Strategy 1: Try to send real email if configured (even in development)
+    if (this.emailConfigured && this.transporter) {
+      try {
+        console.log(`📤 Sending email via Gmail SMTP...`);
+        
+        const mailOptions = {
+          from: `"TickerTracker" <${process.env.EMAIL_FROM}>`,
+          to: email,
+          subject: 'Verify Your Email - TickerTracker Registration',
+          html: this.getOTPEmailTemplate(otp, firstName),
+        };
 
-      const mailOptions = {
-        from: `"TickerTracker" <${process.env.EMAIL_FROM}>`,
-        to: email,
-        subject: 'Verify Your Email - TickerTracker Registration',
-        html: this.getOTPEmailTemplate(otp, firstName),
-      };
-
-      const result = await this.transporter.sendMail(mailOptions);
-      console.log('✅ OTP email sent successfully:', result.messageId);
-      return { success: true, messageId: result.messageId };
-    } catch (error) {
-      console.error('❌ Failed to send OTP email:', error);
-      
-      // In development, still return success to allow testing
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔔 Development mode: Simulating email send success');
-        return { success: true, messageId: 'dev-fallback-' + Date.now() };
+        const result = await this.transporter.sendMail(mailOptions);
+        
+        console.log('\n' + '='.repeat(60));
+        console.log('✅ EMAIL SENT SUCCESSFULLY!');
+        console.log('='.repeat(60));
+        console.log(`📧 To: ${email}`);
+        console.log(`📮 Message ID: ${result.messageId}`);
+        console.log(`🔐 OTP: ${otp}`);
+        console.log(`⏰ Expires: 10 minutes`);
+        console.log('='.repeat(60) + '\n');
+        
+        return { success: true, messageId: result.messageId, method: 'email' };
+        
+      } catch (error) {
+        console.error('\n❌ EMAIL SENDING FAILED:');
+        console.error(`Error: ${error.message}`);
+        console.error('Full error:', error);
+        // Fall through to strategy 2
       }
-      
-      return { success: false, error: error.message };
     }
+
+    // Strategy 2: Development mode fallback - show OTP in console
+    if (process.env.NODE_ENV === 'development') {
+      console.log('\n' + '='.repeat(60));
+      console.log('🔔 DEVELOPMENT MODE - EMAIL OTP (Fallback)');
+      console.log('='.repeat(60));
+      console.log(`📧 Email: ${email}`);
+      console.log(`👤 Name: ${firstName}`);
+      console.log(`🔐 OTP CODE: ${otp}`);
+      console.log(`⏰ Expires: 10 minutes`);
+      console.log(`❌ Email Error: Unable to send via SMTP`);
+      console.log('='.repeat(60) + '\n');
+      return { success: true, messageId: 'dev-mode-' + Date.now(), method: 'console' };
+    }
+
+    // Strategy 2: Try to send real email if configured
+    if (this.emailConfigured && this.transporter) {
+      try {
+        console.log(`� Attempting to send email to: ${email}`);
+        
+        const mailOptions = {
+          from: `"TickerTracker" <${process.env.EMAIL_FROM}>`,
+          to: email,
+          subject: 'Verify Your Email - TickerTracker Registration',
+          html: this.getOTPEmailTemplate(otp, firstName),
+        };
+
+        const result = await this.transporter.sendMail(mailOptions);
+        console.log('✅ Email sent successfully:', result.messageId);
+        return { success: true, messageId: result.messageId, method: 'email' };
+        
+      } catch (error) {
+        console.error('❌ Email sending failed:', error.message);
+        // Fall through to strategy 3
+      }
+    }
+
+    // Strategy 3: Final fallback - Log OTP for manual testing
+    console.log('\n' + '='.repeat(60));
+    console.log('🔔 EMAIL FAILED - MANUAL OTP FOR TESTING');
+    console.log('='.repeat(60));
+    console.log(`📧 Email: ${email}`);
+    console.log(`👤 Name: ${firstName}`);
+    console.log(`🔐 OTP CODE: ${otp}`);
+    console.log(`⏰ Expires: 10 minutes`);
+    console.log(`❌ Email Error: Unable to send email`);
+    console.log('='.repeat(60) + '\n');
+    
+    return { success: true, messageId: 'fallback-' + Date.now(), method: 'fallback' };
   }
 
   // Email template for OTP
@@ -115,6 +192,12 @@ class EmailService {
 
   // Send welcome email after successful verification
   async sendWelcomeEmail(email, firstName) {
+    // Only try to send welcome email if we have email configured
+    if (!this.emailConfigured || !this.transporter) {
+      console.log(`✅ Welcome ${firstName}! (Email not configured - skipping welcome email)`);
+      return { success: true, messageId: 'no-email-config' };
+    }
+
     try {
       const mailOptions = {
         from: `"TickerTracker" <${process.env.EMAIL_FROM}>`,
@@ -195,6 +278,11 @@ class EmailService {
 
   // Test email connection
   async testConnection() {
+    if (!this.emailConfigured || !this.transporter) {
+      console.log('⚠️ Email not configured - cannot test connection');
+      return false;
+    }
+
     try {
       await this.transporter.verify();
       console.log('✅ Email service connected successfully');

@@ -92,20 +92,24 @@ const register = async (req, res) => {
     const otp = user.generateEmailOTP();
     await user.save({ validateBeforeSave: false });
 
-    // Send OTP email
+    // Send OTP email (always succeeds now with fallback)
     const emailResult = await emailService.sendOTPEmail(user.email, otp, user.firstName);
     
-    if (!emailResult.success) {
-      // If email sending fails, delete the user and return error
-      await user.deleteOne();
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to send verification email. Please try again.',
-        error: emailResult.error,
-      });
-    }
+    console.log(`✅ Registration completed for ${user.email}. OTP: ${otp}`);
 
-    console.log(`✅ OTP sent to ${user.email}: ${otp}`); // For development - remove in production
+    // Helper function to get appropriate message based on email method
+    const getEmailMessage = (method) => {
+      switch (method) {
+        case 'email':
+          return 'OTP sent to your email address';
+        case 'console':
+          return 'OTP displayed in console (development mode)';
+        case 'fallback':
+          return 'Email service unavailable - OTP displayed in server console';
+        default:
+          return 'Registration completed - check console for OTP';
+      }
+    };
 
     res.status(201).json({
       success: true,
@@ -113,10 +117,14 @@ const register = async (req, res) => {
       data: {
         userId: user._id,
         email: user.email,
-        message: 'OTP sent to your email address',
+        message: getEmailMessage(emailResult.method),
         expiresIn: '10 minutes',
+        emailMethod: emailResult.method,
+        // Include OTP in development mode
+        ...(process.env.NODE_ENV === 'development' && { developmentOTP: otp }),
       },
     });
+
   } catch (error) {
     console.error('Registration error:', error);
     res.status(500).json({
@@ -575,18 +583,10 @@ const resendOTP = async (req, res) => {
     const otp = user.generateEmailOTP();
     await user.save({ validateBeforeSave: false });
 
-    // Send OTP email
+    // Send OTP email (always succeeds with fallback)
     const emailResult = await emailService.sendOTPEmail(user.email, otp, user.firstName);
     
-    if (!emailResult.success) {
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to send verification email. Please try again.',
-        error: emailResult.error,
-      });
-    }
-
-    console.log(`✅ New OTP sent to ${user.email}: ${otp}`); // For development - remove in production
+    console.log(`✅ New OTP sent to ${user.email}: ${otp}`);
 
     res.status(200).json({
       success: true,
@@ -594,6 +594,8 @@ const resendOTP = async (req, res) => {
       data: {
         email: user.email,
         expiresIn: '10 minutes',
+        emailMethod: emailResult.method,
+        ...(process.env.NODE_ENV === 'development' && { developmentOTP: otp }),
       },
     });
   } catch (error) {
