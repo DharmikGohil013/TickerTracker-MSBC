@@ -1,169 +1,108 @@
-﻿import { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+﻿import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Icons } from '../../components/Icons/Icons';
 import './Dashboard.css';
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/');
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
-
-  const toggleProfileDropdown = () => {
-    setProfileDropdownOpen(!profileDropdownOpen);
-  };
-
-  const getUserInitials = () => {
-    const firstName = user?.firstName || '';
-    const lastName = user?.lastName || '';
-    return (firstName.charAt(0) + lastName.charAt(0)).toUpperCase() || user?.username?.charAt(0).toUpperCase() || 'U';
-  };
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setProfileDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
+  const { user } = useAuth();
 
   return (
     <div className="dashboard-page">
-      {/* Navigation Bar with Profile Section */}
-      <nav className="dashboard-nav">
-        <div className="nav-container">
-          {/* Logo */}
-          <div className="nav-logo">
-            <div className="logo-icon">
-              <img src="/Stock Scope.png" alt="Stock Scope Logo" className="w-8 h-8" />
-            </div>
-            <span className="logo-text">Stock Scope</span>
-          </div>
-
-          {/* Navigation Links */}
-          <div className="nav-links">
-            <Link to="/app/market" className="nav-link">
-              <Icons.Chart />
-              <span>Market</span>
-            </Link>
-            <Link to="/app/portfolio" className="nav-link">
-              <Icons.Portfolio />
-              <span>Portfolio</span>
-            </Link>
-            <Link to="/app/watchlist" className="nav-link">
-              <Icons.Heart />
-              <span>Watchlist</span>
-            </Link>
-            <Link to="/app/search" className="nav-link">
-              <Icons.Search />
-              <span>Search</span>
-            </Link>
-          </div>
-
-          {/* Profile Section */}
-          <div className="nav-profile" ref={dropdownRef}>
-            <div className="profile-dropdown">
-              <button className="profile-trigger" onClick={toggleProfileDropdown}>
-                <div className="profile-avatar">
-                  {getUserInitials()}
-                </div>
-                <div className="profile-info">
-                  <span className="profile-name">
-                    {user?.firstName || user?.username || 'User'}
-                  </span>
-                  <span className="profile-email">
-                    {user?.email || 'user@example.com'}
-                  </span>
-                </div>
-                <div className="profile-chevron">
-                  <Icons.ChevronDown />
-                </div>
-              </button>
-              
-              {profileDropdownOpen && (
-                <div className="profile-dropdown-menu">
-                  <Link to="/app/profile" className="dropdown-item" onClick={() => setProfileDropdownOpen(false)}>
-                    <Icons.User />
-                    <span>Profile Settings</span>
-                  </Link>
-                  <Link to="/app/settings" className="dropdown-item" onClick={() => setProfileDropdownOpen(false)}>
-                    <Icons.Settings />
-                    <span>Account Settings</span>
-                  </Link>
-                  <div className="dropdown-divider"></div>
-                  <button onClick={handleLogout} className="dropdown-item logout-item">
-                    <Icons.Logout />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Dashboard Content */}
-      <div className="dashboard-container">
-        <div className="dashboard-header">
-          <h1 className="dashboard-title">Dashboard</h1>
-          <p className="dashboard-subtitle">Your comprehensive trading overview</p>
-        </div>
-        
+      {/* Main Dashboard Content */}
+      <main className="dashboard-main">
         <div className="dashboard-content">
-          <p className="welcome-message">Welcome to your dashboard!</p>
-          
-          {/* Quick Actions */}
-          <div className="quick-actions">
-            <Link to="/app/market" className="action-card">
-              <div className="action-icon">
-                <Icons.Chart />
+          <div className="dashboard-header">
+            <h1>Welcome back, {user?.firstName || user?.username || 'User'}!</h1>
+            <p>Here's what's happening with your portfolio and watchlist today.</p>
+          </div>
+
+          <div className="dashboard-grid">
+            {/* Market Overview Card */}
+            <div className="dashboard-card">
+              <div className="card-header">
+                <Icons.TrendingUp />
+                <h3>Market Overview</h3>
               </div>
-              <h3>Market Analysis</h3>
-              <p>View real-time market data and analysis</p>
-            </Link>
-            
-            <Link to="/app/search" className="action-card">
-              <div className="action-icon">
-                <Icons.Search />
+              <div className="card-content">
+                <p>Track the latest market trends and performance indicators.</p>
+                <Link to="/app/market" className="card-link">
+                  View Market →
+                </Link>
               </div>
-              <h3>Stock Search</h3>
-              <p>Search and analyze individual stocks</p>
-            </Link>
-            
-            <Link to="/app/portfolio" className="action-card">
-              <div className="action-icon">
+            </div>
+
+            {/* Portfolio Summary Card */}
+            <div className="dashboard-card">
+              <div className="card-header">
                 <Icons.Portfolio />
+                <h3>Portfolio</h3>
               </div>
-              <h3>Portfolio</h3>
-              <p>Manage your investment portfolio</p>
-            </Link>
-            
-            <Link to="/app/watchlist" className="action-card">
-              <div className="action-icon">
+              <div className="card-content">
+                <p>Monitor your investments and track performance.</p>
+                <Link to="/app/portfolio" className="card-link">
+                  View Portfolio →
+                </Link>
+              </div>
+            </div>
+
+            {/* Watchlist Card */}
+            <div className="dashboard-card">
+              <div className="card-header">
                 <Icons.Heart />
+                <h3>Watchlist</h3>
               </div>
-              <h3>Watchlist</h3>
-              <p>Track your favorite stocks</p>
-            </Link>
+              <div className="card-content">
+                <p>Keep track of stocks you're interested in.</p>
+                <Link to="/app/watchlist" className="card-link">
+                  View Watchlist →
+                </Link>
+              </div>
+            </div>
+
+            {/* News & Insights Card */}
+            <div className="dashboard-card">
+              <div className="card-header">
+                <Icons.News />
+                <h3>Market News</h3>
+              </div>
+              <div className="card-content">
+                <p>Stay updated with the latest financial news and insights.</p>
+                <Link to="/app/news" className="card-link">
+                  Read News →
+                </Link>
+              </div>
+            </div>
+
+            {/* Search Card */}
+            <div className="dashboard-card">
+              <div className="card-header">
+                <Icons.Search />
+                <h3>Stock Search</h3>
+              </div>
+              <div className="card-content">
+                <p>Search and analyze individual stocks and ETFs.</p>
+                <Link to="/app/search" className="card-link">
+                  Search Stocks →
+                </Link>
+              </div>
+            </div>
+
+            {/* Analytics Card */}
+            <div className="dashboard-card">
+              <div className="card-header">
+                <Icons.Chart />
+                <h3>Analytics</h3>
+              </div>
+              <div className="card-content">
+                <p>Advanced analytics and performance insights.</p>
+                <Link to="/app/analytics" className="card-link">
+                  View Analytics →
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
