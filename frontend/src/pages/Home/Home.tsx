@@ -35,12 +35,15 @@ const generateMockPriceData = (symbol: string) => {
   for (let i = 0; i < 30; i++) {
     const change = (Math.random() - 0.5) * (basePrice * 0.05);
     price += change;
+    const high = parseFloat((price * 1.02).toFixed(2));
+    const low = parseFloat((price * 0.98).toFixed(2));
     data.push({
       date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toLocaleDateString(),
-      price: parseFloat(price.toFixed(2)),
-      volume: Math.floor(Math.random() * 10000000) + 1000000,
-      high: parseFloat((price * 1.02).toFixed(2)),
-      low: parseFloat((price * 0.98).toFixed(2))
+      open: parseFloat(price.toFixed(2)),
+      close: parseFloat(price.toFixed(2)),
+      high: high,
+      low: low,
+      volume: Math.floor(Math.random() * 10000000) + 1000000
     });
   }
   return data;
@@ -264,8 +267,8 @@ const Home: React.FC<HomeProps> = ({ user, onLogout }) => {
     volume: stockData.volume
   } : chartData[chartData.length - 1];
 
-  const previousPrice = stockData ? stockData.previousClose : chartData[chartData.length - 2]?.price || currentPrice.price;
-  const priceChange = stockData ? stockData.change : currentPrice.price - previousPrice;
+  const previousPrice = stockData ? stockData.previousClose : chartData[chartData.length - 2]?.close || currentPrice.close;
+  const priceChange = stockData ? stockData.change : currentPrice.close - previousPrice;
   const percentChange = stockData ? stockData.changePercent : (priceChange / previousPrice) * 100;
 
   // Enhanced search functionality

@@ -1,0 +1,78 @@
+/* Layout Styles */
+.layout-container {
+  min-height: 100vh;
+  background: #000000;
+  color: #ffffff;
+  display: flex;
+  position: relative;
+}
+
+.layout-content {
+  flex: 1;
+  margin-left: 280px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  transition: margin-left 0.3s ease;
+}
+
+.layout-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.layout-main-content {
+  flex: 1;
+  padding: 0;
+  overflow-y: auto;
+  background: #000000;
+}
+
+/* Background pattern */
+.layout-container::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(102, 126, 234, 0.05) 2px, transparent 2px),
+    radial-gradient(circle at 75% 75%, rgba(118, 75, 162, 0.05) 1px, transparent 1px);
+  background-size: 50px 50px, 30px 30px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .layout-content {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .layout-main-content {
+    padding: 0;
+  }
+}
+
+/* Scrollbar Styling */
+.layout-main-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.layout-main-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.layout-main-content::-webkit-scrollbar-thumb {
+  background: rgba(102, 126, 234, 0.3);
+  border-radius: 4px;
+}
+
+.layout-main-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(102, 126, 234, 0.5);
+}
