@@ -13,6 +13,8 @@ const {
   forgotPassword,
   resetPassword,
   verifyEmail,
+  verifyEmailOTP,
+  resendOTP,
   addToWatchlist,
   removeFromWatchlist,
 } = require('../controllers/authController');
@@ -120,12 +122,36 @@ const forgotPasswordValidation = [
     .normalizeEmail(),
 ];
 
+const verifyOTPValidation = [
+  body('email')
+    .isEmail()
+    .withMessage('Please provide a valid email')
+    .normalizeEmail(),
+  body('otp')
+    .isLength({ min: 6, max: 6 })
+    .withMessage('OTP must be exactly 6 digits')
+    .isNumeric()
+    .withMessage('OTP must contain only numbers'),
+];
+
+const resendOTPValidation = [
+  body('email')
+    .isEmail()
+    .withMessage('Please provide a valid email')
+    .normalizeEmail(),
+];
+
 // Public routes
 router.post('/register', authLimiter, registerValidation, register);
 router.post('/login', authLimiter, loginValidation, login);
 router.post('/forgot-password', passwordResetLimiter, forgotPasswordValidation, forgotPassword);
 router.put('/reset-password/:resettoken', passwordResetLimiter, resetPasswordValidation, resetPassword);
 router.put('/verify-email/:token', verifyEmail);
+
+// OTP verification routes
+router.post('/verify-otp', authLimiter, verifyOTPValidation, verifyEmailOTP);
+router.post('/verify-email', authLimiter, verifyOTPValidation, verifyEmailOTP); // Alias for verify-otp
+router.post('/resend-otp', authLimiter, resendOTPValidation, resendOTP);
 
 // Protected routes
 router.get('/me', protect, getMe);

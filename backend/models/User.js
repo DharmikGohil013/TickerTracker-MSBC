@@ -61,6 +61,23 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  emailOTP: {
+    type: String,
+    default: null,
+  },
+  emailOTPExpires: {
+    type: Date,
+    default: null,
+  },
+  emailOTPAttempts: {
+    type: Number,
+    default: 0,
+  },
+  registrationStatus: {
+    type: String,
+    enum: ['pending', 'verified', 'incomplete'],
+    default: 'pending',
+  },
   passwordResetToken: {
     type: String,
     default: null,
@@ -282,6 +299,61 @@ userSchema.methods.removeFromWatchlist = async function(symbol) {
   );
   await this.save();
   return this;
+};
+
+// Method to generate and set email OTP
+userSchema.methods.generateEmailOTP = function() {
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  
+  this.emailOTP = otp;
+  this.emailOTPExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+  this.emailOTPAttempts = 0;
+  
+  return otp;
+};
+
+// Method to verify email OTP
+userSchema.methods.verifyEmailOTP = function(otp) {
+  // Check if OTP exists and is not expired
+  if (!this.emailOTP || !this.emailOTPExpires) {
+    return { success: false, message: 'No OTP found. Please request a new one.' };
+  }
+  
+  if (this.emailOTPExpires < new Date()) {
+    return { success: false, message: 'OTP has expired. Please request a new one.' };
+  }
+  
+  // Check attempt limits (max 5 attempts)
+  if (this.emailOTPAttempts >= 5) {
+    return { success: false, message: 'Too many failed attempts. Please request a new OTP.' };
+  }
+  
+  // Verify OTP
+  if (this.emailOTP !== otp) {
+    this.emailOTPAttempts += 1;
+    return { 
+      success: false, 
+      message: `Invalid OTP. ${5 - this.emailOTPAttempts} attempts remaining.` 
+    };
+  }
+  
+  // OTP is valid - clear OTP fields and verify email
+  this.emailOTP = undefined;
+  this.emailOTPExpires = undefined;
+  this.emailOTPAttempts = 0;
+  this.isEmailVerified = true;
+  this.registrationStatus = 'verified';
+  
+  return { success: true, message: 'Email verified successfully!' };
+};
+
+// Method to clear expired OTP
+userSchema.methods.clearExpiredOTP = function() {
+  if (this.emailOTPExpires && this.emailOTPExpires < new Date()) {
+    this.emailOTP = undefined;
+    this.emailOTPExpires = undefined;
+    this.emailOTPAttempts = 0;
+  }
 };
 
 // Pre-remove middleware to clean up related data
