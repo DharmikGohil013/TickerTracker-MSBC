@@ -146,7 +146,7 @@ export default function Dashboard() {
                   ))
                 )}
               </div>
-              <Link to="/market" className="market-card-link">
+              <Link to="/app/market" className="market-card-link">
                 View All Gainers
                 <div className="arrow-icon">
                   <Icons.ChevronDown />
@@ -184,7 +184,7 @@ export default function Dashboard() {
                   ))
                 )}
               </div>
-              <Link to="/market" className="market-card-link">
+              <Link to="/app/market" className="market-card-link">
                 View All Losers
                 <div className="arrow-icon">
                   <Icons.ChevronDown />
@@ -199,7 +199,7 @@ export default function Dashboard() {
           <h2 className="section-title">Quick Actions</h2>
           <div className="dashboard-grid">
             {/* Market Overview Card */}
-            <Link to="/market" className="dashboard-card">
+            <Link to="/app/market" className="dashboard-card">
               <div className="card-icon">
                 <Icons.TrendingUp />
               </div>
@@ -212,70 +212,14 @@ export default function Dashboard() {
               </div>
             </Link>
 
-            {/* Portfolio Summary Card */}
-            <Link to="/portfolio" className="dashboard-card">
-              <div className="card-icon">
-                <Icons.Portfolio />
-              </div>
-              <div className="card-content">
-                <h3>Portfolio</h3>
-                <p>Monitor your investments and track performance</p>
-              </div>
-              <div className="card-arrow">
-                <Icons.ChevronDown />
-              </div>
-            </Link>
-
-            {/* Watchlist Card */}
-            <Link to="/watchlist" className="dashboard-card">
-              <div className="card-icon">
-                <Icons.Heart />
-              </div>
-              <div className="card-content">
-                <h3>Watchlist</h3>
-                <p>Keep track of stocks you're interested in</p>
-              </div>
-              <div className="card-arrow">
-                <Icons.ChevronDown />
-              </div>
-            </Link>
-
             {/* News & Insights Card */}
-            <Link to="/news" className="dashboard-card">
+            <Link to="/app/news" className="dashboard-card">
               <div className="card-icon">
                 <Icons.News />
               </div>
               <div className="card-content">
                 <h3>Market News</h3>
                 <p>Stay updated with the latest financial news and insights</p>
-              </div>
-              <div className="card-arrow">
-                <Icons.ChevronDown />
-              </div>
-            </Link>
-
-            {/* Search Card */}
-            <Link to="/search" className="dashboard-card">
-              <div className="card-icon">
-                <Icons.Search />
-              </div>
-              <div className="card-content">
-                <h3>Stock Search</h3>
-                <p>Search and analyze individual stocks and ETFs</p>
-              </div>
-              <div className="card-arrow">
-                <Icons.ChevronDown />
-              </div>
-            </Link>
-
-            {/* Analytics Card */}
-            <Link to="/analytics" className="dashboard-card">
-              <div className="card-icon">
-                <Icons.Chart />
-              </div>
-              <div className="card-content">
-                <h3>Analytics</h3>
-                <p>Advanced analytics and performance insights</p>
               </div>
               <div className="card-arrow">
                 <Icons.ChevronDown />

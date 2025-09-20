@@ -56,29 +56,9 @@ const Sidebar: React.FC = () => {
       icon: <Icons.TrendingUp />,
     },
     {
-      name: 'Portfolio',
-      href: '/app/portfolio',
-      icon: <Icons.Portfolio />,
-    },
-    {
-      name: 'Watchlist',
-      href: '/app/watchlist',
-      icon: <Icons.Heart />,
-    },
-    {
-      name: 'Search',
-      href: '/app/search',
-      icon: <Icons.Search />,
-    },
-    {
       name: 'News',
       href: '/app/news',
       icon: <Icons.News />,
-    },
-    {
-      name: 'Analytics',
-      href: '/app/analytics',
-      icon: <Icons.Chart />,
     },
   ];
 

@@ -19,15 +19,11 @@ import ForgotPassword from './pages/Auth/ForgotPassword';
 import ResetPassword from './pages/Auth/ResetPassword';
 import VerifyEmail from './pages/Auth/VerifyEmail';
 import Dashboard from './pages/Dashboard/Dashboard';
-import WatchlistPage from './pages/Watchlist/Watchlist';
 import Profile from './pages/Profile/Profile';
 import Settings from './pages/Settings/Settings';
 import MarketOverview from './pages/Market/MarketOverview';
 import StockDetail from './pages/Market/StockDetail';
-import Search from './pages/Search/Search';
 import News from './pages/News/News';
-import Portfolio from './pages/Portfolio/Portfolio';
-import Analytics from './pages/Analytics/Analytics';
 
 // App content component that has access to loading context
 function AppContent() {
@@ -59,13 +55,9 @@ function AppContent() {
           }>
             <Route index element={<Navigate to="/app/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
-            <Route path="watchlist" element={<WatchlistPage />} />
             <Route path="market" element={<MarketOverview />} />
-            <Route path="search" element={<Search />} />
             <Route path="stock/:symbol" element={<StockDetail />} />
             <Route path="news" element={<News />} />
-            <Route path="portfolio" element={<Portfolio />} />
-            <Route path="analytics" element={<Analytics />} />
             <Route path="profile" element={<Profile />} />
             <Route path="settings" element={<Settings />} />
           </Route>
