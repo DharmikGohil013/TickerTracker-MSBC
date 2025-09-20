@@ -1,405 +1,581 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Icons } from '../../components/Icons/Icons';
 import './FreeTrial.css';
 
 interface StockData {
-  time: string;
+  symbol: string;
+  name: string;
   price: number;
+  change: number;
+  changePercent: number;
   volume: number;
+  marketCap: string;
+  pe: number;
 }
 
-interface PredictionPoint {
+interface NewsItem {
+  id: number;
+  title: string;
+  summary: string;
   time: string;
-  price: number;
-  type: 'buy' | 'sell';
-  confidence: number;
+  impact: 'positive' | 'negative' | 'neutral';
+  source: string;
+}
+
+interface ProfitLossData {
+  investment: number;
+  currentValue: number;
+  profit: number;
+  profitPercent: number;
+  timeHeld: string;
+  shares: number;
 }
 
 const FreeTrial: React.FC = () => {
-  const [stockData, setStockData] = useState<StockData[]>([]);
-  const [currentPrice, setCurrentPrice] = useState(2850.50);
-  const [isMarketOpen, setIsMarketOpen] = useState(false);
-  const [predictionLoading, setPredictionLoading] = useState<'buy' | 'sell' | null>(null);
-  const [predictions, setPredictions] = useState<PredictionPoint[]>([]);
-  const [lastPrediction, setLastPrediction] = useState<PredictionPoint | null>(null);
-  const chartRef = useRef<HTMLCanvasElement>(null);
+  // Static stock data that updates with animation
+  const [stockData, setStockData] = useState<StockData>({
+    symbol: 'NVDA',
+    name: 'NVIDIA Corporation',
+    price: 456.78,
+    change: 23.45,
+    changePercent: 5.42,
+    volume: 45678900,
+    marketCap: '$1.12T',
+    pe: 65.4
+  });
 
-  // Check if market is open (9:15 AM - 3:30 PM IST)
-  const checkMarketHours = () => {
-    const now = new Date();
-    const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
-    const istTime = new Date(now.getTime() + istOffset);
-    const hours = istTime.getHours();
-    const minutes = istTime.getMinutes();
-    
-    const currentTime = hours * 60 + minutes;
-    const marketOpen = 9 * 60 + 15; // 9:15 AM
-    const marketClose = 15 * 60 + 30; // 3:30 PM
-    
-    return currentTime >= marketOpen && currentTime <= marketClose;
-  };
+  // Graph data points for animation
+  const [graphData, setGraphData] = useState<number[]>([420, 425, 430, 435, 445, 450, 455, 456.78]);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Generate fake live data
-  const generateStockData = () => {
-    const now = new Date();
-    const timeString = now.toLocaleTimeString('en-IN');
-    
-    // Simulate price movement
-    const volatility = 0.002;
-    const change = (Math.random() - 0.5) * volatility * currentPrice;
-    const newPrice = Math.max(currentPrice + change, 2800); // Min price 2800
-    
-    const newData: StockData = {
-      time: timeString,
-      price: Number(newPrice.toFixed(2)),
-      volume: Math.floor(Math.random() * 10000) + 5000
-    };
-
-    setCurrentPrice(newPrice);
-    setStockData(prev => [...prev.slice(-49), newData]); // Keep last 50 points
-  };
-
-  // Handle prediction
-  const handlePrediction = async (type: 'buy' | 'sell') => {
-    setPredictionLoading(type);
-    
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const confidence = Math.random() * 30 + 70; // 70-100% confidence
-    const priceChange = type === 'buy' ? 
-      Math.random() * 50 + 10 : // Buy: +10 to +60
-      -(Math.random() * 40 + 15); // Sell: -15 to -55
-    
-    const prediction: PredictionPoint = {
-      time: new Date().toLocaleTimeString('en-IN'),
-      price: Number((currentPrice + priceChange).toFixed(2)),
-      type,
-      confidence: Number(confidence.toFixed(1))
-    };
-
-    setPredictions(prev => [...prev, prediction]);
-    setLastPrediction(prediction);
-    setPredictionLoading(null);
-  };
-
-  // Draw chart
-  const drawChart = () => {
-    const canvas = chartRef.current;
-    if (!canvas || stockData.length === 0) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Set canvas size
-    canvas.width = 800;
-    canvas.height = 400;
-
-    // Chart dimensions
-    const padding = 60;
-    const chartWidth = canvas.width - 2 * padding;
-    const chartHeight = canvas.height - 2 * padding;
-
-    // Calculate price range
-    const prices = stockData.map(d => d.price);
-    const minPrice = Math.min(...prices) - 10;
-    const maxPrice = Math.max(...prices) + 10;
-    const priceRange = maxPrice - minPrice;
-
-    // Draw grid
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = 1;
-    
-    // Horizontal grid lines
-    for (let i = 0; i <= 5; i++) {
-      const y = padding + (chartHeight / 5) * i;
-      ctx.beginPath();
-      ctx.moveTo(padding, y);
-      ctx.lineTo(padding + chartWidth, y);
-      ctx.stroke();
-      
-      // Price labels
-      const price = maxPrice - (priceRange / 5) * i;
-      ctx.fillStyle = '#fff';
-      ctx.font = '12px Arial';
-      ctx.textAlign = 'right';
-      ctx.fillText(`₹${price.toFixed(0)}`, padding - 10, y + 4);
+  // News data that updates frequently
+  const [news, setNews] = useState<NewsItem[]>([
+    {
+      id: 1,
+      title: "NVIDIA Announces Revolutionary AI Chip Architecture",
+      summary: "New GPU series shows 40% performance improvement over previous generation, driving stock surge",
+      time: "2 minutes ago",
+      impact: 'positive',
+      source: 'TechCrunch'
+    },
+    {
+      id: 2,
+      title: "Strong Q3 Earnings Beat Analyst Expectations",
+      summary: "Revenue up 68% year-over-year, driven by data center demand and AI adoption",
+      time: "15 minutes ago", 
+      impact: 'positive',
+      source: 'Reuters'
+    },
+    {
+      id: 3,
+      title: "Tech Sector Shows Resilience Despite Market Volatility",
+      summary: "Major tech stocks outperform broader market indices amid economic uncertainty",
+      time: "32 minutes ago",
+      impact: 'neutral',
+      source: 'Bloomberg'
+    },
+    {
+      id: 4,
+      title: "AI Investment Continues to Drive Growth",
+      summary: "Enterprise AI adoption accelerates across industries, boosting semiconductor demand",
+      time: "1 hour ago",
+      impact: 'positive',
+      source: 'CNBC'
     }
+  ]);
 
-    // Vertical grid lines
-    for (let i = 0; i <= 10; i++) {
-      const x = padding + (chartWidth / 10) * i;
-      ctx.beginPath();
-      ctx.moveTo(x, padding);
-      ctx.lineTo(x, padding + chartHeight);
-      ctx.stroke();
-    }
+  // User investment tracking
+  const [budget, setBudget] = useState<string>('');
+  const [investmentData, setInvestmentData] = useState<ProfitLossData | null>(null);
+  const [timeframe, setTimeframe] = useState<'short' | 'long'>('short');
+  const [showResults, setShowResults] = useState(false);
 
-    // Draw price line
-    if (stockData.length > 1) {
-      ctx.strokeStyle = '#22c55e';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
+  // Animation states
+  const [isLive, setIsLive] = useState(true);
+  const [newsUpdateCount, setNewsUpdateCount] = useState(0);
 
-      stockData.forEach((data, index) => {
-        const x = padding + (chartWidth / (stockData.length - 1)) * index;
-        const y = padding + chartHeight - ((data.price - minPrice) / priceRange) * chartHeight;
-
-        if (index === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
-        }
-      });
-
-      ctx.stroke();
-
-      // Draw data points
-      ctx.fillStyle = '#22c55e';
-      stockData.forEach((data, index) => {
-        const x = padding + (chartWidth / (stockData.length - 1)) * index;
-        const y = padding + chartHeight - ((data.price - minPrice) / priceRange) * chartHeight;
-        
-        ctx.beginPath();
-        ctx.arc(x, y, 3, 0, 2 * Math.PI);
-        ctx.fill();
-      });
-    }
-
-    // Draw prediction points
-    predictions.forEach(prediction => {
-      const x = padding + chartWidth - 20; // Near the end
-      const y = padding + chartHeight - ((prediction.price - minPrice) / priceRange) * chartHeight;
-      
-      ctx.fillStyle = prediction.type === 'buy' ? '#22c55e' : '#ef4444';
-      ctx.beginPath();
-      ctx.arc(x, y, 8, 0, 2 * Math.PI);
-      ctx.fill();
-      
-      // Add prediction label
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 12px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText(
-        `${prediction.type.toUpperCase()} ₹${prediction.price}`, 
-        x, 
-        y - 15
-      );
-    });
-  };
-
+  // Animate stock price and graph
   useEffect(() => {
-    setIsMarketOpen(checkMarketHours());
-    
-    // Initialize with some data
-    const initialData: StockData[] = [];
-    for (let i = 0; i < 20; i++) {
-      const price = 2850 + (Math.random() - 0.5) * 40;
-      initialData.push({
-        time: new Date(Date.now() - (20 - i) * 60000).toLocaleTimeString('en-IN'),
-        price: Number(price.toFixed(2)),
-        volume: Math.floor(Math.random() * 8000) + 4000
-      });
-    }
-    setStockData(initialData);
-
-    // Start live updates if market is open
     const interval = setInterval(() => {
-      if (checkMarketHours()) {
-        generateStockData();
-      }
-      setIsMarketOpen(checkMarketHours());
-    }, 3000); // Update every 3 seconds
+      // Simulate realistic price fluctuation
+      const basePrice = 456.78;
+      const volatility = 0.015; // 1.5% volatility
+      const trend = Math.sin(Date.now() / 30000) * 0.005; // Slow trend component
+      const noise = (Math.random() - 0.5) * volatility;
+      const fluctuation = (trend + noise) * basePrice;
+      
+      const newPrice = Math.max(basePrice + fluctuation, 400); // Min price 400
+      const change = newPrice - basePrice;
+      const changePercent = (change / basePrice) * 100;
+
+      setStockData(prev => ({
+        ...prev,
+        price: Number(newPrice.toFixed(2)),
+        change: Number(change.toFixed(2)),
+        changePercent: Number(changePercent.toFixed(2)),
+        volume: Math.floor(Math.random() * 10000000) + 40000000 // Random volume
+      }));
+
+      // Update graph data
+      setGraphData(prev => {
+        const newData = [...prev.slice(-11), newPrice]; // Keep last 12 points
+        return newData;
+      });
+
+      setCurrentTime(new Date());
+    }, 2500); // Update every 2.5 seconds
 
     return () => clearInterval(interval);
   }, []);
 
+  // Update news periodically
   useEffect(() => {
-    drawChart();
-  }, [stockData, predictions]);
+    const newsItems = [
+      {
+        title: "Breaking: Major Partnership Announcement Expected",
+        summary: "Industry leaders hint at groundbreaking AI collaboration that could reshape the market",
+        impact: 'positive' as const,
+        source: 'Market Watch'
+      },
+      {
+        title: "Semiconductor Demand Reaches All-Time High",
+        summary: "Global chip shortage drives unprecedented demand for AI processors and graphics cards",
+        impact: 'positive' as const,
+        source: 'Financial Times'
+      },
+      {
+        title: "Federal Reserve Decision Impacts Tech Stocks",
+        summary: "Interest rate considerations affecting technology sector valuations and growth projections",
+        impact: 'neutral' as const,
+        source: 'Wall Street Journal'
+      },
+      {
+        title: "Institutional Investors Increase AI Holdings",
+        summary: "Major funds allocate significant capital to artificial intelligence and semiconductor stocks",
+        impact: 'positive' as const,
+        source: "Investor's Business Daily"
+      },
+      {
+        title: "Data Center Expansion Drives Revenue Growth",
+        summary: "Cloud computing demand fuels massive infrastructure investments across the industry",
+        impact: 'positive' as const,
+        source: 'TechNews'
+      }
+    ];
 
-  const priceChange = stockData.length > 1 ? 
-    currentPrice - stockData[stockData.length - 2].price : 0;
-  const priceChangePercent = stockData.length > 1 ? 
-    (priceChange / stockData[stockData.length - 2].price) * 100 : 0;
+    const newsInterval = setInterval(() => {
+      const randomNews = newsItems[Math.floor(Math.random() * newsItems.length)];
+      const newItem = {
+        id: Date.now(),
+        title: randomNews.title,
+        summary: randomNews.summary,
+        time: "Just now",
+        impact: randomNews.impact,
+        source: randomNews.source
+      };
+
+      setNews(prev => [newItem, ...prev.slice(0, 3)]);
+      setNewsUpdateCount(prev => prev + 1);
+    }, 8000); // Update news every 8 seconds
+
+    return () => clearInterval(newsInterval);
+  }, []);
+
+  const handleBudgetSubmit = () => {
+    if (!budget || isNaN(Number(budget)) || Number(budget) <= 0) return;
+
+    const investment = Number(budget);
+    const shares = investment / stockData.price;
+    
+    // Simulate different scenarios based on timeframe
+    let multiplier = 1;
+    let timeHeld = '';
+    
+    if (timeframe === 'short') {
+      // Short term: 1 day simulation with smaller but more frequent gains
+      multiplier = 1 + (Math.random() * 0.08 - 0.02); // -2% to +6%
+      timeHeld = '1 day';
+    } else {
+      // Long term: 30 days simulation with larger potential gains
+      multiplier = 1 + (Math.random() * 0.35 - 0.05); // -5% to +30%
+      timeHeld = '30 days';
+    }
+    
+    const currentValue = investment * multiplier;
+    const profit = currentValue - investment;
+    const profitPercent = (profit / investment) * 100;
+    
+    setInvestmentData({
+      investment,
+      currentValue,
+      profit,
+      profitPercent,
+      timeHeld,
+      shares: Number(shares.toFixed(4))
+    });
+    
+    setShowResults(true);
+  };
+
+  const formatCurrency = (value: number): string => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
+
+  const formatNumber = (value: number): string => {
+    if (value >= 1000000) {
+      return (value / 1000000).toFixed(1) + 'M';
+    } else if (value >= 1000) {
+      return (value / 1000).toFixed(1) + 'K';
+    }
+    return value.toLocaleString();
+  };
 
   return (
-    <div className="free-trial-page">
-      {/* Header */}
-      <header className="trial-header">
-        <div className="trial-nav">
-          <div className="nav-logo">
-            <img src="/Stock Scope.png" alt="Stock Scope Logo" className="logo-image" />
-            <span className="logo-text">Stock Scope</span>
-          </div>
-          <div className="trial-status">
-            <span className="trial-badge">Free Trial Active</span>
-          </div>
-        </div>
-      </header>
+    <div className="free-trial-container">
+      {/* Background Elements */}
+      <div className="free-trial-background">
+        <div className="free-trial-gradient"></div>
+        <div className="free-trial-pattern"></div>
+      </div>
 
-      <div className="trial-container">
-        {/* Stock Info */}
-        <div className="stock-header">
-          <div className="stock-info">
-            <h1 className="stock-name">Reliance Industries Ltd.</h1>
-            <p className="stock-symbol">BSE: RELIANCE</p>
+      {/* Main Content */}
+      <div className="free-trial-content">
+        {/* Header */}
+        <div className="free-trial-header">
+          <div className="brand-logo">
+            <Icons.Logo />
+            <h1 className="brand-title">Stock Scope</h1>
           </div>
-          <div className="stock-price">
-            <div className="current-price">₹{currentPrice.toFixed(2)}</div>
-            <div className={`price-change ${priceChange >= 0 ? 'positive' : 'negative'}`}>
-              {priceChange >= 0 ? '+' : ''}₹{priceChange.toFixed(2)} 
-              ({priceChangePercent >= 0 ? '+' : ''}{priceChangePercent.toFixed(2)}%)
-            </div>
+          <div className="trial-badge">
+            <span className="badge-text">Free Trial Experience</span>
+            <div className="badge-pulse"></div>
           </div>
-          <div className="market-status">
-            <div className={`status-indicator ${isMarketOpen ? 'open' : 'closed'}`}>
-              {isMarketOpen ? 'Market Open' : 'Market Closed'}
-            </div>
-            <div className="market-time">BSE: 9:15 AM - 3:30 PM IST</div>
-          </div>
+          <h2 className="trial-title">Live Market Analysis Dashboard</h2>
+          <p className="trial-subtitle">
+            Experience real-time market data, AI-powered insights, and portfolio tracking
+          </p>
         </div>
 
-        {/* Chart Section */}
-        <div className="chart-section">
-          <div className="chart-header">
-            <h2>Live Price Chart</h2>
-            <div className="chart-controls">
-              <button className="time-btn active">Live</button>
-              <button className="time-btn">1D</button>
-              <button className="time-btn">1W</button>
-              <button className="time-btn">1M</button>
-            </div>
-          </div>
-          <div className="chart-container">
-            <canvas ref={chartRef} className="price-chart"></canvas>
-          </div>
-        </div>
-
-        {/* Prediction Section */}
-        <div className="prediction-section">
-          <h2>AI Prediction Analysis</h2>
-          <div className="prediction-buttons">
-            <button 
-              className="prediction-btn buy-btn"
-              onClick={() => handlePrediction('buy')}
-              disabled={predictionLoading !== null}
-            >
-              {predictionLoading === 'buy' ? (
-                <div className="loading-spinner"></div>
-              ) : (
-                <Icons.TrendingUp />
-              )}
-              <span>Predict BUY Signal</span>
-            </button>
-            <button 
-              className="prediction-btn sell-btn"
-              onClick={() => handlePrediction('sell')}
-              disabled={predictionLoading !== null}
-            >
-              {predictionLoading === 'sell' ? (
-                <div className="loading-spinner"></div>
-              ) : (
-                <Icons.TrendingDown />
-              )}
-              <span>Predict SELL Signal</span>
-            </button>
-          </div>
-
-          {lastPrediction && (
-            <div className="prediction-result">
-              <div className="result-header">
-                <Icons.Target />
-                <h3>Latest Prediction</h3>
-              </div>
-              <div className="result-content">
-                <div className="prediction-type">
-                  <span className={`type-badge ${lastPrediction.type}`}>
-                    {lastPrediction.type.toUpperCase()}
+        {/* Stock Data Section */}
+        <div className="stock-section">
+          <div className="stock-card">
+            <div className="stock-header">
+              <div className="stock-info">
+                <h3 className="stock-symbol">
+                  {stockData.symbol}
+                  <span className="live-indicator">
+                    <div className="live-dot"></div>
+                    LIVE
                   </span>
-                  <span className="prediction-price">₹{lastPrediction.price}</span>
-                </div>
-                <div className="confidence-meter">
-                  <div className="confidence-label">Confidence</div>
-                  <div className="confidence-bar">
-                    <div 
-                      className="confidence-fill"
-                      style={{ width: `${lastPrediction.confidence}%` }}
-                    ></div>
-                  </div>
-                  <div className="confidence-value">{lastPrediction.confidence}%</div>
+                </h3>
+                <p className="stock-name">{stockData.name}</p>
+                <div className="stock-exchange">NASDAQ</div>
+              </div>
+              <div className="stock-price-info">
+                <span className="stock-price">{formatCurrency(stockData.price)}</span>
+                <span className={`stock-change ${stockData.change >= 0 ? 'positive' : 'negative'}`}>
+                  {stockData.change >= 0 ? '+' : ''}{formatCurrency(stockData.change)} 
+                  ({stockData.changePercent >= 0 ? '+' : ''}{stockData.changePercent.toFixed(2)}%)
+                </span>
+                <div className="last-updated">
+                  Last updated: {currentTime.toLocaleTimeString()}
                 </div>
               </div>
             </div>
-          )}
-        </div>
 
-        {/* Accuracy Section */}
-        <div className="accuracy-section">
-          <h2>Prediction Accuracy & Performance</h2>
-          <div className="accuracy-grid">
-            <div className="accuracy-card">
-              <div className="accuracy-icon">
-                <Icons.Target />
+            {/* Live Graph */}
+            <div className="stock-graph">
+              <div className="graph-header">
+                <h4>Real-Time Price Chart</h4>
+                <div className="graph-timeframe">
+                  <span className="timeframe-label">Live 5min</span>
+                </div>
               </div>
-              <div className="accuracy-content">
-                <div className="accuracy-number">92.3%</div>
-                <div className="accuracy-label">Overall Accuracy</div>
-                <div className="accuracy-detail">Last 30 days</div>
+              
+              <div className="graph-container">
+                <svg width="100%" height="140" viewBox="0 0 500 140">
+                  <defs>
+                    <linearGradient id="stockGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#87CEEB" stopOpacity="0.4"/>
+                      <stop offset="100%" stopColor="#87CEEB" stopOpacity="0.05"/>
+                    </linearGradient>
+                    <filter id="glow">
+                      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                      <feMerge> 
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  
+                  {/* Grid lines */}
+                  {[...Array(6)].map((_, i) => (
+                    <line
+                      key={i}
+                      x1="40"
+                      y1={20 + i * 20}
+                      x2="460"
+                      y2={20 + i * 20}
+                      stroke="rgba(135, 206, 235, 0.1)"
+                      strokeWidth="1"
+                    />
+                  ))}
+                  
+                  {/* Price line */}
+                  <path
+                    d={`M ${graphData.map((price, index) => 
+                      `${40 + (index * 420) / (graphData.length - 1)},${140 - 20 - ((price - Math.min(...graphData)) / (Math.max(...graphData) - Math.min(...graphData))) * 100}`
+                    ).join(' L ')}`}
+                    fill="none"
+                    stroke="#87CEEB"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    filter="url(#glow)"
+                  />
+                  
+                  {/* Fill area */}
+                  <path
+                    d={`M 40,140 ${graphData.map((price, index) => 
+                      `L ${40 + (index * 420) / (graphData.length - 1)},${140 - 20 - ((price - Math.min(...graphData)) / (Math.max(...graphData) - Math.min(...graphData))) * 100}`
+                    ).join(' ')} L 460,140 Z`}
+                    fill="url(#stockGradient)"
+                  />
+                  
+                  {/* Data points */}
+                  {graphData.map((price, index) => (
+                    <circle
+                      key={index}
+                      cx={40 + (index * 420) / (graphData.length - 1)}
+                      cy={140 - 20 - ((price - Math.min(...graphData)) / (Math.max(...graphData) - Math.min(...graphData))) * 100}
+                      r={index === graphData.length - 1 ? "6" : "3"}
+                      fill="#87CEEB"
+                      className={index === graphData.length - 1 ? 'current-point' : ''}
+                    />
+                  ))}
+                  
+                  {/* Price labels */}
+                  <text x="20" y="25" fill="#87CEEB" fontSize="10">${Math.max(...graphData).toFixed(0)}</text>
+                  <text x="20" y="135" fill="#87CEEB" fontSize="10">${Math.min(...graphData).toFixed(0)}</text>
+                </svg>
               </div>
-            </div>
-            <div className="accuracy-card">
-              <div className="accuracy-icon">
-                <Icons.TrendingUp />
-              </div>
-              <div className="accuracy-content">
-                <div className="accuracy-number">156</div>
-                <div className="accuracy-label">Successful Predictions</div>
-                <div className="accuracy-detail">This month</div>
-              </div>
-            </div>
-            <div className="accuracy-card">
-              <div className="accuracy-icon">
-                <Icons.Chart />
-              </div>
-              <div className="accuracy-content">
-                <div className="accuracy-number">₹2.4L</div>
-                <div className="accuracy-label">Average Profit</div>
-                <div className="accuracy-detail">Per prediction</div>
-              </div>
-            </div>
-            <div className="accuracy-card">
-              <div className="accuracy-icon">
-                <Icons.Clock />
-              </div>
-              <div className="accuracy-content">
-                <div className="accuracy-number">4.2 hrs</div>
-                <div className="accuracy-label">Avg. Time to Target</div>
-                <div className="accuracy-detail">Price achievement</div>
+              
+              <div className="stock-metrics">
+                <div className="metric">
+                  <span className="metric-label">Volume</span>
+                  <span className="metric-value">{formatNumber(stockData.volume)}</span>
+                </div>
+                <div className="metric">
+                  <span className="metric-label">Market Cap</span>
+                  <span className="metric-value">{stockData.marketCap}</span>
+                </div>
+                <div className="metric">
+                  <span className="metric-label">P/E Ratio</span>
+                  <span className="metric-value">{stockData.pe}</span>
+                </div>
+                <div className="metric">
+                  <span className="metric-label">52W High</span>
+                  <span className="metric-value">$502.15</span>
+                </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="accuracy-details">
-            <h3>Recent Prediction History</h3>
-            <div className="prediction-history">
-              {predictions.slice(-5).reverse().map((prediction, index) => (
-                <div key={index} className="history-item">
-                  <div className="history-time">{prediction.time}</div>
-                  <div className={`history-type ${prediction.type}`}>
-                    {prediction.type.toUpperCase()}
+        {/* News Section */}
+        <div className="news-section">
+          <div className="section-header">
+            <h3 className="section-title">
+              <Icons.News />
+              Live Market News
+              {newsUpdateCount > 0 && (
+                <span className="update-badge">{newsUpdateCount} new</span>
+              )}
+            </h3>
+            <div className="news-frequency">
+              <div className="frequency-indicator"></div>
+              Updates every 8 seconds
+            </div>
+          </div>
+          
+          <div className="news-list">
+            {news.map((item, index) => (
+              <div key={item.id} className={`news-item ${index === 0 ? 'latest' : ''}`}>
+                <div className={`news-indicator ${item.impact}`}></div>
+                <div className="news-content">
+                  <div className="news-meta">
+                    <span className="news-source">{item.source}</span>
+                    <span className="news-time">{item.time}</span>
                   </div>
-                  <div className="history-price">₹{prediction.price}</div>
-                  <div className="history-confidence">{prediction.confidence}%</div>
-                  <div className="history-status success">
-                    <Icons.Check />
-                    Achieved
+                  <h4 className="news-title">{item.title}</h4>
+                  <p className="news-summary">{item.summary}</p>
+                </div>
+                <div className={`impact-badge ${item.impact}`}>
+                  {item.impact === 'positive' ? <Icons.TrendingUp /> : 
+                   item.impact === 'negative' ? <Icons.TrendingDown /> : 
+                   <Icons.Minus />}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Investment Tracker */}
+        <div className="investment-section">
+          <div className="section-header">
+            <h3 className="section-title">
+              <Icons.Calculator />
+              Smart Investment Tracker
+            </h3>
+            <p className="section-subtitle">
+              Enter your budget and see potential profit/loss over time
+            </p>
+          </div>
+          
+          <div className="investment-card">
+            <div className="investment-inputs">
+              <div className="input-group">
+                <label htmlFor="budget">Investment Amount</label>
+                <div className="input-wrapper">
+                  <span className="currency-symbol">$</span>
+                  <input
+                    type="number"
+                    id="budget"
+                    value={budget}
+                    onChange={(e) => setBudget(e.target.value)}
+                    placeholder="1000"
+                    className="budget-input"
+                    min="1"
+                    max="1000000"
+                  />
+                </div>
+                <span className="input-hint">Minimum: $1, Maximum: $1,000,000</span>
+              </div>
+              
+              <div className="timeframe-selector">
+                <label>Investment Period</label>
+                <div className="timeframe-buttons">
+                  <button
+                    className={`timeframe-btn ${timeframe === 'short' ? 'active' : ''}`}
+                    onClick={() => setTimeframe('short')}
+                  >
+                    <Icons.Clock />
+                    Short Term
+                    <span className="timeframe-desc">1 Day</span>
+                  </button>
+                  <button
+                    className={`timeframe-btn ${timeframe === 'long' ? 'active' : ''}`}
+                    onClick={() => setTimeframe('long')}
+                  >
+                    <Icons.Calendar />
+                    Long Term
+                    <span className="timeframe-desc">30 Days</span>
+                  </button>
+                </div>
+              </div>
+              
+              <button 
+                className="track-button" 
+                onClick={handleBudgetSubmit}
+                disabled={!budget || isNaN(Number(budget)) || Number(budget) <= 0}
+              >
+                <Icons.TrendingUp />
+                Calculate Potential Returns
+              </button>
+            </div>
+
+            {showResults && investmentData && (
+              <div className="investment-results">
+                <div className="results-header">
+                  <div className="results-title">
+                    <Icons.Target />
+                    <h4>Investment Analysis</h4>
+                  </div>
+                  <div className="results-meta">
+                    <span className="time-held">Simulated {investmentData.timeHeld}</span>
+                    <span className="shares-owned">{investmentData.shares} shares</span>
                   </div>
                 </div>
-              ))}
+                
+                <div className="results-grid">
+                  <div className="result-item initial">
+                    <span className="result-label">Initial Investment</span>
+                    <span className="result-value">{formatCurrency(investmentData.investment)}</span>
+                  </div>
+                  <div className="result-item current">
+                    <span className="result-label">Current Value</span>
+                    <span className="result-value">{formatCurrency(investmentData.currentValue)}</span>
+                  </div>
+                  <div className="result-item profit-loss">
+                    <span className="result-label">Profit/Loss</span>
+                    <span className={`result-value ${investmentData.profit >= 0 ? 'profit' : 'loss'}`}>
+                      {investmentData.profit >= 0 ? '+' : ''}{formatCurrency(investmentData.profit)}
+                    </span>
+                  </div>
+                  <div className="result-item percentage">
+                    <span className="result-label">Return %</span>
+                    <span className={`result-value ${investmentData.profitPercent >= 0 ? 'profit' : 'loss'}`}>
+                      {investmentData.profitPercent >= 0 ? '+' : ''}{investmentData.profitPercent.toFixed(2)}%
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="results-insights">
+                  <div className="insight">
+                    <Icons.Info />
+                    <span>
+                      {investmentData.profit >= 0 
+                        ? `Great choice! Your investment would have gained ${formatCurrency(investmentData.profit)} over ${investmentData.timeHeld}.`
+                        : `This period shows a loss of ${formatCurrency(Math.abs(investmentData.profit))} over ${investmentData.timeHeld}. Market timing matters!`
+                      }
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* CTA Section */}
+        <div className="cta-section">
+          <div className="cta-content">
+            <div className="cta-text">
+              <h3>Ready to Start Your Investment Journey?</h3>
+              <p>Join thousands of smart investors using Stock Scope for data-driven trading decisions</p>
+              <div className="cta-features">
+                <div className="feature">
+                  <Icons.Check />
+                  <span>Real-time market data</span>
+                </div>
+                <div className="feature">
+                  <Icons.Check />
+                  <span>AI-powered insights</span>
+                </div>
+                <div className="feature">
+                  <Icons.Check />
+                  <span>Portfolio tracking</span>
+                </div>
+                <div className="feature">
+                  <Icons.Check />
+                  <span>Risk analysis</span>
+                </div>
+              </div>
+            </div>
+            <div className="cta-buttons">
+              <Link to="/register" className="cta-button primary">
+                <Icons.Star />
+                Start Free Trial
+              </Link>
+              <Link to="/login" className="cta-button secondary">
+                <Icons.User />
+                Sign In
+              </Link>
             </div>
           </div>
         </div>
