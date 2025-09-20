@@ -23,15 +23,15 @@
     /* Path mapping */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@/components/*": ["./src/components/*"],
-      "@/pages/*": ["./src/pages/*"],
-      "@/services/*": ["./src/services/*"],
-      "@/contexts/*": ["./src/contexts/*"],
-      "@/hooks/*": ["./src/hooks/*"],
-      "@/types/*": ["./src/types/*"],
-      "@/utils/*": ["./src/utils/*"],
-      "@/styles/*": ["./src/styles/*"]
+      "@/": ["./src/"],
+      "@/components/": ["./src/components/"],
+      "@/pages/": ["./src/pages/"],
+      "@/services/": ["./src/services/"],
+      "@/contexts/": ["./src/contexts/"],
+      "@/hooks/": ["./src/hooks/"],
+      "@/types/": ["./src/types/"],
+      "@/utils/": ["./src/utils/"],
+      "@/styles/": ["./src/styles/"]
     }
   },
   "include": ["src"],

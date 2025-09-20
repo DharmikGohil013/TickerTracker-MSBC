@@ -8,6 +8,8 @@ import './Dashboard.css';
 export default function Dashboard() {
   const { user } = useAuth();
   const [marketData, setMarketData] = useState<MarketOverview | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Mock data for fallback
   const mockTopMovers = {
@@ -29,10 +31,13 @@ export default function Dashboard() {
   // Fetch market data
   const fetchMarketData = async () => {
     try {
+      setIsLoading(true);
+      setError(null);
       const data = await StockService.getMarketOverview();
       setMarketData(data);
     } catch (err: any) {
       console.error('Error fetching market data:', err);
+      setError('Unable to fetch real-time data. Showing demo data.');
       // Use mock data as fallback
       setMarketData({
         indices: {},
@@ -40,6 +45,8 @@ export default function Dashboard() {
         marketStatus: 'open',
         lastUpdated: new Date().toISOString()
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -73,6 +80,20 @@ export default function Dashboard() {
   const topGainers = getTopMovers('gainers');
   const topLosers = getTopMovers('losers');
 
+  // Loading skeleton component
+  const StockItemSkeleton = () => (
+    <div className="stock-item">
+      <div className="stock-info">
+        <div className="skeleton skeleton-symbol"></div>
+        <div className="skeleton skeleton-name"></div>
+      </div>
+      <div className="stock-metrics">
+        <div className="skeleton skeleton-price"></div>
+        <div className="skeleton skeleton-change"></div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="dashboard-page">
       <div className="dashboard-container">
@@ -84,6 +105,11 @@ export default function Dashboard() {
           <p className="dashboard-subtitle">
             Track markets, manage your portfolio, and stay ahead of the trends
           </p>
+          {error && (
+            <div className="error-banner">
+              ⚠️ {error}
+            </div>
+          )}
         </div>
 
         {/* Market Overview Section */}
@@ -99,20 +125,26 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="market-card-content">
-                {topGainers.map((stock) => (
-                  <div key={stock.symbol} className="stock-item">
-                    <div className="stock-info">
-                      <span className="stock-symbol">{stock.symbol}</span>
-                      <span className="stock-name">{stock.name}</span>
+                {isLoading ? (
+                  Array.from({ length: 4 }).map((_, index) => (
+                    <StockItemSkeleton key={index} />
+                  ))
+                ) : (
+                  topGainers.map((stock) => (
+                    <div key={stock.symbol} className="stock-item">
+                      <div className="stock-info">
+                        <span className="stock-symbol">{stock.symbol}</span>
+                        <span className="stock-name">{stock.name}</span>
+                      </div>
+                      <div className="stock-metrics">
+                        <span className="stock-price">{formatCurrency(stock.price)}</span>
+                        <span className="stock-change positive">
+                          +{stock.changePercent.toFixed(2)}%
+                        </span>
+                      </div>
                     </div>
-                    <div className="stock-metrics">
-                      <span className="stock-price">{formatCurrency(stock.price)}</span>
-                      <span className="stock-change positive">
-                        +{stock.changePercent.toFixed(2)}%
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
               <Link to="/market" className="market-card-link">
                 View All Gainers
@@ -131,20 +163,26 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="market-card-content">
-                {topLosers.map((stock) => (
-                  <div key={stock.symbol} className="stock-item">
-                    <div className="stock-info">
-                      <span className="stock-symbol">{stock.symbol}</span>
-                      <span className="stock-name">{stock.name}</span>
+                {isLoading ? (
+                  Array.from({ length: 4 }).map((_, index) => (
+                    <StockItemSkeleton key={index} />
+                  ))
+                ) : (
+                  topLosers.map((stock) => (
+                    <div key={stock.symbol} className="stock-item">
+                      <div className="stock-info">
+                        <span className="stock-symbol">{stock.symbol}</span>
+                        <span className="stock-name">{stock.name}</span>
+                      </div>
+                      <div className="stock-metrics">
+                        <span className="stock-price">{formatCurrency(stock.price)}</span>
+                        <span className="stock-change negative">
+                          {stock.changePercent.toFixed(2)}%
+                        </span>
+                      </div>
                     </div>
-                    <div className="stock-metrics">
-                      <span className="stock-price">{formatCurrency(stock.price)}</span>
-                      <span className="stock-change negative">
-                        {stock.changePercent.toFixed(2)}%
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
               <Link to="/market" className="market-card-link">
                 View All Losers
