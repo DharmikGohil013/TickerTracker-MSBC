@@ -237,12 +237,37 @@ const FreeTrial: React.FC = () => {
   };
 
   return (
-    <div className="free-trial-container">
-      {/* Background Elements */}
-      <div className="free-trial-background">
-        <div className="free-trial-gradient"></div>
-        <div className="free-trial-pattern"></div>
-      </div>
+    <div className="free-trial-page">
+      {/* Navigation Bar - Same as Landing */}
+      <nav className="landing-nav">
+        <div className="nav-container">
+          {/* Logo */}
+          <div className="nav-logo">
+            <div className="logo-icon">
+              <img src="/Stock Scope.png" alt="Stock Scope Logo" className="w-8 h-8" />
+            </div>
+            <span className="logo-text" style={{ color: '#87CEEB' }}>Stock Scope</span>
+          </div>
+
+          {/* Auth Buttons */}
+          <div className="nav-auth">
+            <Link to="/login" className="nav-btn nav-btn-outline">
+              Sign In
+            </Link>
+            <Link to="/register" className="nav-btn nav-btn-primary">
+              Sign Up
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content Container */}
+      <div className="free-trial-container">
+        {/* Background Elements */}
+        <div className="free-trial-background">
+          <div className="free-trial-gradient"></div>
+          <div className="free-trial-pattern"></div>
+        </div>
 
       {/* Main Content */}
       <div className="free-trial-content">
@@ -580,6 +605,7 @@ const FreeTrial: React.FC = () => {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };

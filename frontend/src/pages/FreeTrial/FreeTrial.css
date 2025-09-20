@@ -1,4 +1,89 @@
 /* Free Trial Page Styles - Matching Auth Theme */
+.free-trial-page {
+  min-height: 100vh;
+  background: #000000;
+  color: #ffffff;
+}
+
+/* Navigation - Same as Landing Page */
+.landing-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(135, 206, 235, 0.3);
+  z-index: 50;
+  transition: all 0.3s ease;
+}
+
+.nav-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 4rem;
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logo-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #87CEEB;
+}
+
+.nav-auth {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-btn {
+  padding: 0.5rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.nav-btn-outline {
+  color: #ffffff;
+  border: 1px solid #87CEEB;
+  background: rgba(135, 206, 235, 0.1);
+}
+
+.nav-btn-outline:hover {
+  background: rgba(135, 206, 235, 0.2);
+  border-color: #87CEEB;
+  color: #ffffff;
+}
+
+.nav-btn-primary {
+  background: linear-gradient(135deg, #87CEEB 0%, #4682B4 100%);
+  color: #000000;
+  border: 1px solid transparent;
+}
+
+.nav-btn-primary:hover {
+  background: linear-gradient(135deg, #4682B4 0%, #87CEEB 100%);
+  transform: translateY(-1px);
+}
+
 .free-trial-container {
   min-height: 100vh;
   position: relative;
@@ -6,7 +91,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 2rem 1rem;
+  padding: 6rem 1rem 2rem;
   color: #ffffff;
 }
 
@@ -825,7 +910,20 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .free-trial-container {
-    padding: 1rem 0.5rem;
+    padding: 5rem 0.5rem 1rem;
+  }
+  
+  .nav-container {
+    padding: 0 1rem;
+  }
+  
+  .nav-auth {
+    gap: 0.5rem;
+  }
+  
+  .nav-btn {
+    padding: 0.375rem 1rem;
+    font-size: 0.8rem;
   }
   
   .free-trial-header {
@@ -878,7 +976,25 @@
 
 @media (max-width: 480px) {
   .free-trial-container {
-    padding: 1rem 0.25rem;
+    padding: 5rem 0.25rem 1rem;
+  }
+  
+  .nav-container {
+    padding: 0 0.5rem;
+    height: 3.5rem;
+  }
+  
+  .logo-text {
+    font-size: 1.25rem;
+  }
+  
+  .nav-auth {
+    gap: 0.375rem;
+  }
+  
+  .nav-btn {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
   }
   
   .free-trial-header {
